@@ -881,7 +881,6 @@ export function ChatPage() {
       try {
         let streamError: string | null = null
         if (imageGenerationRequested) {
-          setMessages((current) => current.map((message) => message.id === typingMessage.id ? { ...message, statusLabel: "Generating image?" } : message))
           response = await chatApi.sendCeaserMessage(content, conversationId ?? undefined, fileIds, {
             modelPreference: modelPreference === "auto" ? undefined : modelPreference,
             responseMode: "image",
@@ -889,17 +888,6 @@ export function ChatPage() {
           })
         } else {
           await chatApi.sendCeaserMessageStream(content, conversationId ?? undefined, fileIds, {
-            onStatus: (payload) => {
-              if (streamSessionRef.current !== streamSessionId) return
-              const state = String(payload.state || "")
-              const labels: Record<string, string> = {
-                received: "Request received?",
-                understanding_request: "Understanding your request?",
-                retrieving_context: "Gathering relevant context?",
-                generating: "Writing response?",
-              }
-              setMessages((current) => current.map((message) => message.id === typingMessage.id ? { ...message, statusLabel: labels[state] || "Working?" } : message))
-            },
             onToken: (text) => {
               if (streamSessionRef.current !== streamSessionId) return
               if (firstTokenAt === null) {
@@ -1687,8 +1675,7 @@ function ChatBubble({
         {!isUser && <div className="mb-3 flex items-center gap-3"><span className="font-semibold text-violet-400">CEASER</span><span className="text-xs text-white/40">{message.timestamp}</span>{!message.isTyping && !message.isStreaming ? <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/[0.07] px-4 py-2 text-xs text-emerald-400"><Check className="h-3.5 w-3.5" />Completed</span> : null}</div>}
         {message.isTyping ? (
           <div className="flex items-center gap-2 text-white/55">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">{message.statusLabel || "Thinking..."}</span>
+            <Loader2 className="h-4 w-4 animate-spin" aria-label="Generating response" />
           </div>
         ) : (
           <>
@@ -1697,7 +1684,7 @@ function ChatBubble({
             {message.role === "assistant" && !message.isStreaming && message.richResponse && hasStructuredRichContent(message.richResponse)
               ? <RichResponseRenderer response={message.richResponse} onAction={onPromptSelect} />
               : message.role === "assistant" && message.isStreaming && message.content.trimStart().startsWith("{")
-              ? <div className="flex items-center gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-2 text-sm text-cyan-100"><Loader2 className="h-4 w-4 animate-spin" /> Structuring CEASER&apos;s response?</div>
+              ? <div className="inline-flex items-center justify-center rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-2 text-cyan-100"><Loader2 className="h-4 w-4 animate-spin" aria-label="Streaming response" /></div>
               : message.role === "assistant" && !message.isStreaming && parseProjectReport(message.content)
                 ? <ProjectReportCard report={parseProjectReport(message.content)!} />
                 : message.role === "assistant" && !message.isStreaming && parseFridayStructuredResponse(message.content)
