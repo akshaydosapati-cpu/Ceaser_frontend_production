@@ -43,6 +43,7 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
   })
   const [authBusy, setAuthBusy] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
+  const [hotkeyContinueBusy, setHotkeyContinueBusy] = useState(false)
   const googleBusyRef = useRef(false)
   const [recoveryBusy, setRecoveryBusy] = useState(false)
   const [verificationBusy, setVerificationBusy] = useState(false)
@@ -444,13 +445,13 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
             {step === "hotkey" && (
               <StepPanel eyebrow="Desktop" title="Your CEASER hotkey" text="The global overlay shortcut works when the CEASER desktop companion is running. You can test the key combination here before continuing.">
                 <div className="rounded-3xl border border-primary/20 bg-primary/10 p-6 text-center">
-                  <p className="text-sm text-muted-foreground">Hold key</p>
-                  <p className="mt-2 text-3xl font-bold tracking-wide text-primary">Hold Right Ctrl</p>
+                  <p className="text-sm text-muted-foreground">Hotkey</p>
+                  <p className="mt-2 text-3xl font-bold tracking-wide text-primary">CTRL + SHIFT + SPACEBAR</p>
                   <p className={cn("mt-3 text-sm", hotkeyStatus === "detected" ? "text-emerald-300" : "text-muted-foreground")}>
-                    {hotkeyStatus === "detected" ? "Hold key detected. Hold it, speak, then release to run the command." : "Hold Right Ctrl while speaking. Release it when you are done."}
+                    {hotkeyStatus === "detected" ? "Hotkey detected. Hold it, speak, then release to run the command." : "Click CTRL + SHIFT + SPACEBAR while speaking. Release it when you are done."}
                   </p>
                 </div>
-                <div className="flex items-center gap-3"><BackButton onClick={() => setStep("permissions")} /><PrimaryButton onClick={() => setStep("voice")}>Continue</PrimaryButton></div>
+                <div className="flex items-center gap-3"><BackButton onClick={() => setStep("permissions")} /><PrimaryButton onClick={async () => { if (hotkeyContinueBusy) return; setHotkeyContinueBusy(true); await new Promise((resolve) => window.setTimeout(resolve, 450)); setStep("voice"); setHotkeyContinueBusy(false) }} disabled={hotkeyContinueBusy}>{hotkeyContinueBusy ? "Continuing..." : "Continue"}</PrimaryButton></div>
               </StepPanel>
             )}
 
