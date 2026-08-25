@@ -82,7 +82,7 @@
   document.querySelectorAll('a[href="/downloads/"], a[href="/downloads"]').forEach(function (link) {
     link.addEventListener("click", function () {
       if (window.ceaserTrackEvent) window.ceaserTrackEvent("desktop_download_clicked", { platform: "windows" });
-      var apiBase = ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production.onrender.com").replace(/\/$/, "");
+      var apiBase = ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production-ur04.onrender.com").replace(/\/$/, "");
       var payload = JSON.stringify({ source: "landing", platform: "windows", version: "v1.0" });
       try {
         if (navigator.sendBeacon) {
@@ -258,7 +258,7 @@
     ];
 
     function getApiBase() {
-      return ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production.onrender.com").replace(/\/$/, "");
+      return ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production-ur04.onrender.com").replace(/\/$/, "");
     }
 
     function getStoredAccessToken() {
@@ -887,7 +887,7 @@
         email: emailInput.value.trim()
       };
 
-      var apiBase = ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production.onrender.com").replace(/\/$/, "");
+      var apiBase = ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production-ur04.onrender.com").replace(/\/$/, "");
 
       fetch(apiBase + "/api/v1/waitlist", {
         method: "POST",

@@ -12,7 +12,7 @@ export function getApiBaseUrl() {
   if (process.env.NODE_ENV !== "production") {
     return "http://127.0.0.1:8000"
   }
-  return "https://ceaser-backend-production.onrender.com"
+  return "https://ceaser-backend-production-ur04.onrender.com"
 }
 
 const API_BASE_URL = getApiBaseUrl()

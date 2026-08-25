@@ -14,7 +14,7 @@
     LAUNCH_DATE: launchDate,
     CONSOLE_URL: "/console/",
     DOWNLOAD_URL: "/downloads/",
-    API_BASE_URL: "https://ceaser-backend-production.onrender.com",
+    API_BASE_URL: "https://ceaser-backend-production-ur04.onrender.com",
     SUPABASE_URL: "https://rrfqqgxhmimffrcckxay.supabase.co",
     CONTACT_EMAIL: "teamceaser@heyceaser.in",
     SUPPORT_EMAIL: "teamceaser@heyceaser.in",
