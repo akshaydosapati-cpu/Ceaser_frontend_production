@@ -59,6 +59,6 @@ function soonPage(label) {
 }
 
 function downloadPage() {
-  const installerUrl = "https://media.githubusercontent.com/media/akshaydosapati-cmd/Ceaser_frontend_production/main/assets/desktop/CEASER-Desktop-Setup.exe"
+  const installerUrl = "https://media.githubusercontent.com/media/akshaydosapati-cpu/Ceaser_frontend_production/main/assets/desktop/CEASER-Desktop-Setup.exe"
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Download CEASER Desktop</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#050712;color:#f8fafc;font-family:Inter,system-ui,sans-serif}.card{width:min(600px,calc(100% - 32px));border:1px solid rgba(139,92,246,.35);background:rgba(255,255,255,.06);border-radius:28px;padding:34px}.eyebrow{color:#c4b5fd;text-transform:uppercase;letter-spacing:.18em;font-size:12px;font-weight:800}h1{font-size:42px;margin:12px 0}.muted{color:#a8b3cf;line-height:1.7}.btn{display:inline-flex;margin-top:20px;padding:12px 18px;border-radius:999px;background:#8b5cf6;color:white;text-decoration:none;font-weight:700}</style></head><body><main class="card"><div class="eyebrow">CEASER Desktop</div><h1>Download the latest Windows companion</h1><p class="muted">Install CEASER Desktop to use voice commands and local computer controls.</p><a class="btn" href="${installerUrl}" download="CEASER-Desktop-Setup.exe">Download for Windows</a><p class="muted">Version 0.1.1 · Windows 10/11</p></main></body></html>`
 }
