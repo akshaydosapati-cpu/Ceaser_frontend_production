@@ -5,6 +5,7 @@ import { useApp } from "@/lib/app-context"
 import { getPageTitle } from "@/lib/ceaser"
 import { getUserDisplayName, getUserDisplayRole, readUserProfile } from "@/lib/user-profile"
 import { authApi } from "@/lib/api/auth"
+import { toast } from "@/hooks/use-toast"
 import { chatApi, type ConversationRecord } from "@/lib/api/chat"
 import { memoryApi, type MemoryRecord } from "@/lib/api/memory"
 import {
@@ -105,20 +106,27 @@ export function Header() {
     })
   }
 
-  async function signOut() {
-    const confirmed = await confirmDialog({
-      title: "Sign out of CEASER?",
-      description: "You can sign back in anytime. This device will return to the welcome screen.",
-      confirmLabel: "Sign out",
+
+async function signOut() {
+  const confirmed = await confirmDialog({
+    title: "Are you sure you want to log out?",
+    description: "You can sign back in anytime. CEASER will return to the landing page.",
+    confirmLabel: "Logout",
+    cancelLabel: "Cancel",
+    tone: "danger",
+  })
+  if (!confirmed) return
+  try {
+    await authApi.signOut()
+    window.location.replace("/")
+  } catch (error) {
+    toast({
+      variant: "destructive",
+      title: "Logout failed",
+      description: error instanceof Error ? error.message : "We couldn't sign you out right now.",
     })
-    if (!confirmed) return
-    try {
-      await authApi.signOut()
-    } catch {
-      // Local sign out still keeps the product usable when the backend is unavailable.
-    }
-    window.location.reload()
   }
+}
 
   return (
     <header className="relative z-30 m-3 mb-0 flex h-14 min-w-0 items-center justify-between gap-4 rounded-lg border border-border bg-card/72 px-5 backdrop-blur-md">

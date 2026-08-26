@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { authApi, type AuthSession } from "@/lib/api/auth"
 import { adminApi } from "@/lib/api/admin"
-import { ApiError, clearAuthTokens, getAccessToken, recordStartupMetric } from "@/lib/api/client"
+import { ApiError, getAccessToken, recordStartupMetric } from "@/lib/api/client"
+import { clearConsoleSessionState } from "@/lib/session"
 import { CeaserSelect } from "./ceaser-select"
 import { CeaserLogo } from "./ceaser-logo"
 import { SystemStatusCard } from "./system-status-card"
@@ -80,14 +81,18 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
       } catch (error) {
         if (mounted) setMessage(error instanceof Error ? cleanAuthMessage(error.message) : "Google sign-in could not continue.")
       }
-      const token = getAccessToken()
-      if (!token) {
-        if (mounted) {
-          setAuthStatus("no_session")
-          setIsChecking(false)
-        }
-        return
-      }
+const token = getAccessToken()
+if (!token) {
+  if (mounted && !guestDemo) {
+    window.location.replace("/")
+    return
+  }
+  if (mounted) {
+    setAuthStatus("no_session")
+    setIsChecking(false)
+  }
+  return
+}
       setAuthStatus("verifying")
       recordStartupMetric("auth_verify_start")
       try {
@@ -139,17 +144,17 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
     }
   }, [guestDemo])
 
-  useEffect(() => {
-    const onSessionExpired = () => {
-      clearAuthTokens()
-      setSession(null)
-      setOnboardingComplete(false)
-      setStep("auth")
-      setMessage("Your session expired. Please sign in again.")
-    }
-    window.addEventListener("ceaser:session-expired", onSessionExpired)
-    return () => window.removeEventListener("ceaser:session-expired", onSessionExpired)
-  }, [])
+useEffect(() => {
+  const onSessionExpired = () => {
+    clearConsoleSessionState()
+    setSession(null)
+    setOnboardingComplete(false)
+    setMessage("Your session expired. Please sign in again.")
+    window.location.replace("/")
+  }
+  window.addEventListener("ceaser:session-expired", onSessionExpired)
+  return () => window.removeEventListener("ceaser:session-expired", onSessionExpired)
+}, [])
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return
