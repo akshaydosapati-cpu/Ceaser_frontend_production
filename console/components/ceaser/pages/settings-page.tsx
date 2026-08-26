@@ -6,7 +6,6 @@ import { getUserDisplayName, readUserProfile } from "@/lib/user-profile"
 import { GlowCard } from "../glow-card"
 import { CeaserLogo } from "../ceaser-logo"
 import { CeaserSelect } from "../ceaser-select"
-import { SystemStatusCard } from "../system-status-card"
 import { authApi } from "@/lib/api/auth"
 import { getAccessToken } from "@/lib/api/client"
 import { ENABLE_BILLING_SECTION } from "@/lib/ceaser/config"
@@ -57,12 +56,6 @@ declare global {
 
 
 const settingsSections = [
-  { 
-    id: "status", 
-    label: "System Status", 
-    icon: Activity,
-    description: "Readiness & setup"
-  },
   { 
     id: "profile", 
     label: "Profile", 
@@ -155,7 +148,7 @@ function ensureRazorpayLoaded() {
 }
 
 export function SettingsPage() {
-  const [activeSection, setActiveSection] = useState("status")
+  const [activeSection, setActiveSection] = useState("profile")
   const [profile, setProfile] = useState<{ name?: string; email?: string; useCase?: string } | null>(null)
   const [profileDraft, setProfileDraft] = useState({ name: getUserDisplayName(readUserProfile(), user.name), email: "", useCase: user.role })
   const [currentPassword, setCurrentPassword] = useState("")
@@ -802,23 +795,6 @@ export function SettingsPage() {
 
       {/* Settings Content */}
       <div className="flex-1 overflow-y-auto p-6">
-        {activeSection === "status" && (
-          <div className="max-w-3xl space-y-6">
-            <h2 className="text-2xl font-bold">System Status</h2>
-            <p className="text-muted-foreground">Clean launch readiness without technical noise.</p>
-            <SystemStatusCard />
-            <GlowCard>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div><h3 className="font-semibold">Desktop capabilities</h3><p className="text-sm text-muted-foreground">Live capabilities advertised by your connected CEASER devices.</p></div>
-                  <button onClick={() => void loadDesktopDevices()} disabled={desktopDevicesBusy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-secondary disabled:opacity-50">{desktopDevicesBusy ? "Checking..." : "Refresh"}</button>
-                </div>
-                <CapabilitySummary devices={desktopDevices} />
-              </div>
-            </GlowCard>
-          </div>
-        )}
-
         {activeSection === "profile" && (
           <div className="max-w-5xl space-y-6">
             <h2 className="text-2xl font-bold">Profile</h2>

@@ -79,7 +79,38 @@
       if (window.ceaserTrackEvent) window.ceaserTrackEvent("try_ceaser_clicked", { location: "landing", destination: "/console/" });
     });
   });
-  document.querySelectorAll('a[href="/downloads/"], a[href="/downloads"]').forEach(function (link) {
+  var downloadModal = document.getElementById("desktop-download-modal");
+  var downloadPanel = downloadModal && downloadModal.querySelector(".download-modal-panel");
+  var lastDownloadTrigger = null;
+  function openDownloadModal(trigger) {
+    if (!downloadModal) return;
+    lastDownloadTrigger = trigger || null;
+    downloadModal.hidden = false;
+    document.body.classList.add("download-modal-open");
+    if (window.ceaserTrackEvent) window.ceaserTrackEvent("desktop_download_modal_opened", { platform: "windows" });
+    window.requestAnimationFrame(function () { if (downloadPanel) downloadPanel.focus(); });
+  }
+  function closeDownloadModal() {
+    if (!downloadModal) return;
+    downloadModal.hidden = true;
+    document.body.classList.remove("download-modal-open");
+    if (lastDownloadTrigger) lastDownloadTrigger.focus();
+  }
+  document.querySelectorAll(".js-download-modal").forEach(function (link) {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      openDownloadModal(link);
+    });
+  });
+  if (downloadModal) {
+    downloadModal.querySelectorAll("[data-download-close]").forEach(function (button) {
+      button.addEventListener("click", closeDownloadModal);
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !downloadModal.hidden) closeDownloadModal();
+    });
+  }
+  document.querySelectorAll("[data-installer-download]").forEach(function (link) {
     link.addEventListener("click", function () {
       if (window.ceaserTrackEvent) window.ceaserTrackEvent("desktop_download_clicked", { platform: "windows" });
       var apiBase = ((window.CEASER_CONFIG && window.CEASER_CONFIG.API_BASE_URL) || "https://ceaser-backend-production-ur04.onrender.com").replace(/\/$/, "");

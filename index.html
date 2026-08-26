@@ -98,7 +98,7 @@
         </p>
         <div class="hero-ctas reveal-load" style="animation-delay:.32s">
           <a href="#experience" class="btn btn-primary">Experience CEASER</a>
-          <a href="/downloads/" class="btn btn-ghost">Download Desktop Companion</a>
+          <a href="/downloads/" class="btn btn-ghost js-download-modal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>Download Desktop Companion</a>
         </div>
       </div>
       <div class="live-orb-stage reveal-load" style="animation-delay:.36s" aria-label="Animated CEASER intelligence orb">
@@ -297,11 +297,52 @@
       <p class="sub">Experience the AI Operating System built for real work.</p>
       <div class="hero-ctas" style="justify-content:center; margin-top:28px;">
         <a href="/console/" class="btn btn-primary">Experience CEASER</a>
-        <a href="/downloads/" class="btn btn-ghost">Download Desktop Companion</a>
+        <a href="/downloads/" class="btn btn-ghost js-download-modal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>Download Desktop Companion</a>
       </div>
     </div>
   </section>
 </main>
+
+<div class="download-modal" id="desktop-download-modal" role="dialog" aria-modal="true" aria-labelledby="download-modal-title" hidden>
+  <div class="download-modal-backdrop" data-download-close></div>
+  <section class="download-modal-panel" tabindex="-1">
+    <button class="download-modal-close" type="button" aria-label="Close download window" data-download-close>&times;</button>
+    <div class="download-modal-brand"><span class="brand-mark" aria-hidden="true"></span><strong>CEASER</strong></div>
+    <div class="download-modal-grid">
+      <div class="download-modal-copy">
+        <span class="download-platform"><span aria-hidden="true">&#8862;</span> Windows</span>
+        <h2 id="download-modal-title">Download CEASER<br><span>Desktop Companion</span></h2>
+        <p>Your AI companion for productivity, automation, and complete PC control.</p>
+        <div class="download-benefits" aria-label="Desktop Companion benefits">
+          <span><b>Fast &amp; Lightweight</b>Optimized for daily work</span>
+          <span><b>Secure &amp; Private</b>Local actions stay on device</span>
+          <span><b>Full Control</b>Voice and desktop automation</span>
+        </div>
+      </div>
+      <div class="desktop-product-visual" aria-label="CEASER Desktop Companion preview">
+        <div class="desktop-window-bar"><span class="brand-mark" aria-hidden="true"></span><strong>CEASER</strong><i></i><i></i><i></i></div>
+        <div class="desktop-window-body">
+          <div class="desktop-preview-nav"><b>Home</b><span>Chat</span><span>PC Control</span><span>Automation</span><span>Files</span><span>Settings</span></div>
+          <div class="desktop-preview-main"><div class="preview-orb"></div><h3>Hello, I'm CEASER</h3><p>How can I help you today?</p><div class="preview-input">Ask anything or give a command...</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="download-modal-actions">
+      <div class="download-card">
+        <h3>Ready to get started?</h3>
+        <p>Download the latest version for Windows.</p>
+        <a class="download-primary" data-installer-download href="https://media.githubusercontent.com/media/akshaydosapati-cmd/Ceaser_frontend_production/main/assets/desktop/CEASER-Desktop-Setup.exe" download="CEASER-Desktop-Setup.exe"><span class="windows-mark" aria-hidden="true">&#8862;</span>Download for Windows<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg></a>
+        <small>Version 0.1.1 &middot; Windows 10/11 (64-bit)</small>
+        <span class="verified-download">&#10003; Verified installer</span>
+      </div>
+      <div class="requirements-card">
+        <h3>System Requirements</h3>
+        <ul><li>Windows 10 or 11 (64-bit)</li><li>4 GB RAM or higher</li><li>500 MB free disk space</li><li>Internet connection</li></ul>
+      </div>
+    </div>
+    <div class="download-support-row"><span><b>Easy Installation</b>One-click setup</span><span><b>Automatic Updates</b>Stay current</span><span><b>Secure by Design</b>Built with privacy</span><a href="mailto:teamceaser@heyceaser.in"><b>Need Help?</b>Contact support</a></div>
+  </section>
+</div>
 
 <!-- ================= FOOTER ================= -->
 <footer class="footer">
