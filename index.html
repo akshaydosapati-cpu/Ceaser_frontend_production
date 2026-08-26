@@ -115,44 +115,70 @@
       <div class="section-head reveal">
         <span class="eyebrow">Try CEASER</span>
         <h2>One place to explore what CEASER can do.</h2>
-        <p>Switch between real product moments. Each tab shows how CEASER understands, plans, and turns intent into an outcome.</p>
+        <p>Open a stable guest version of the live CEASER chat workspace. No account required, and no private console data is loaded.</p>
       </div>
-      <div class="try-lab reveal" data-feature-lab>
-        <div class="try-tabs" role="tablist" aria-label="CEASER feature demos">
-          <button type="button" class="active" data-feature-tab="voice"><span class="tab-icon">AI</span>Ask</button>
-          <button type="button" data-feature-tab="capture"><span class="tab-icon">SC</span>Analyze</button>
-          <button type="button" data-feature-tab="create"><span class="tab-icon">CR</span>Create</button>
-          <button type="button" data-feature-tab="control"><span class="tab-icon">PC</span>Desktop</button>
-          <button type="button" data-feature-tab="workflow"><span class="tab-icon">WF</span>Workflow</button>
-        </div>
-        <div class="try-stage">
-          <div class="try-copy">
-            <span class="eyebrow" data-feature-label>Ask CEASER</span>
-            <h3 data-feature-title>Try browser-ready intelligence.</h3>
-            <p data-feature-body>Choose a prepared command and CEASER will generate a useful response in the browser experience.</p>
-            <div class="try-command-list" data-feature-prompts></div>
-            <form class="try-runner" data-try-runner>
-              <button type="button" class="try-mic" data-try-mic aria-label="Run selected command"></button>
-              <div class="try-selected" data-feature-prompt>Hey CEASER, open Chrome and search AI news</div>
-              <button type="submit" class="btn btn-primary btn-sm">Generate</button>
-            </form>
-            <input type="file" data-capture-file hidden accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.xlsx,.txt,.md,.csv">
-            <p class="try-note">Custom prompts and real desktop control are available after sign-in with the CEASER console and Desktop Companion.</p>
-          </div>
-          <div class="try-motion" data-feature-visual>
-            <div class="try-orb"></div>
-            <div class="try-lines" data-feature-steps>
-              <span>Listening</span>
-              <span>Understanding</span>
-              <span>Executing</span>
+      <div class="guest-lab reveal" data-guest-workspace data-is-guest="true">
+        <div class="guest-topbar">
+          <div class="guest-topbar-brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <div>
+              <strong>CEASER</strong>
+              <span>Guest workspace</span>
             </div>
-            <div class="try-result" data-feature-result>Chrome opened with the latest AI news search.</div>
           </div>
+          <div class="guest-profile-wrap">
+            <button type="button" class="guest-profile-trigger" data-guest-profile-button aria-haspopup="menu" aria-expanded="false">
+              <span class="guest-avatar" aria-hidden="true">G</span>
+              <span class="guest-profile-copy">
+                <strong>Guest</strong>
+                <span>Session only</span>
+              </span>
+            </button>
+            <div class="guest-popover" data-guest-profile-popover hidden role="menu" aria-label="Guest account menu">
+              <p class="guest-popover-title">Guest</p>
+              <p class="guest-popover-copy">You're using CEASER as a guest. Create an account or sign in to unlock your personal workspace.</p>
+              <div class="guest-popover-actions">
+                <a class="btn btn-primary btn-sm" href="/console/?mode=signup">Create Account</a>
+                <a class="btn btn-ghost btn-sm" href="/console/?mode=login">Sign In</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="guest-grid">
+          <section class="guest-chat-panel">
+            <div class="guest-heading">
+              <p class="guest-greeting"><span data-guest-greeting>Good morning, Guest</span></p>
+              <h3>What can I help you with?</h3>
+              <p>Ask about anything public, keep the conversation going, and create your CEASER account whenever you want the full workspace.</p>
+            </div>
+            <div class="guest-thread" data-guest-thread aria-live="polite" aria-busy="false"></div>
+            <div class="guest-suggestions">
+              <button type="button" data-guest-suggestion="Explain quantum computing in simple terms.">Explain Quantum Computing</button>
+              <button type="button" data-guest-suggestion="Summarize the Ramayana for a beginner.">Summarize the Ramayana</button>
+              <button type="button" data-guest-suggestion="Create a practical weekly study plan for an exam.">Weekly Study Plan</button>
+              <button type="button" data-guest-suggestion="Write a professional leave request email.">Leave Request Email</button>
+            </div>
+            <form class="guest-composer" data-guest-form>
+              <input data-guest-input type="text" placeholder="Ask CEASER..." aria-label="Ask CEASER" autocomplete="off" />
+              <button type="submit" class="btn btn-primary btn-sm">Send</button>
+            </form>
+            <p class="guest-cta-note">Want more than guest chat? <a href="/console/?mode=signup">Create your free CEASER account</a> to unlock your personal AI workspace.</p>
+          </section>
+          <aside class="guest-side-panel">
+            <div class="guest-side-card guest-side-card-primary">
+              <span class="eyebrow">Guest mode</span>
+              <h4>Stable from the first render.</h4>
+              <p>CEASER keeps this landing experience separate from your console account, profile, and saved work.</p>
+            </div>
+            <div class="guest-side-card">
+              <p class="guest-side-title">Full workspace later</p>
+              <p class="guest-side-copy">Create an account to access your personal AI workspace, saved chats, and product features inside CEASER.</p>
+            </div>
+          </aside>
         </div>
       </div>
     </div>
   </section>
-
   <section class="section" id="features">
     <div class="container">
       <div class="section-head reveal">
@@ -276,7 +302,7 @@
     </div>
   </section>
 
-  <section class="section" id="pricing">
+  <section class="section" id="pricing" data-feature="pricing">
     <div class="container">
       <div class="section-head reveal">
         <span class="eyebrow">Pricing</span>

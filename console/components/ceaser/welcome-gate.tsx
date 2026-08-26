@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { authApi, type AuthSession } from "@/lib/api/auth"
@@ -28,7 +28,11 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [onboardingComplete, setOnboardingComplete] = useState(false)
   const [step, setStep] = useState<Step>("welcome")
-  const [authMode, setAuthMode] = useState<AuthMode>("login")
+  const [authMode, setAuthMode] = useState<AuthMode>(() => {
+    if (typeof window === "undefined") return "login"
+    const mode = new URLSearchParams(window.location.search).get("mode") || new URLSearchParams(window.location.search).get("auth")
+    return mode === "signup" ? "signup" : "login"
+  })
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [passwordVisible, setPasswordVisible] = useState(false)
