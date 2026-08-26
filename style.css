@@ -1024,10 +1024,11 @@ body[data-launch-phase="live"] [data-postlaunch-only]{ display:block; }
 .console-demo-frame{
   overflow:hidden;
   border:1px solid rgba(139,92,246,.42);
-  border-radius:28px;
+  border-radius:22px;
   background:#030712;
-  box-shadow:0 42px 140px -70px rgba(34,211,238,.58);
+  box-shadow:0 38px 120px -66px rgba(34,211,238,.5), 0 0 0 1px rgba(255,255,255,.025);
 }
+.guest-stage [hidden]{display:none!important}
 .console-demo-bar{
   display:flex;
   height:42px;
