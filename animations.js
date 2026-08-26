@@ -192,7 +192,7 @@
     }, 1800);
   }
 
-  /* -------- Guest workspace -------- */
+    /* -------- Guest workspace -------- */
   var guestWorkspace = document.querySelector("[data-guest-workspace]");
   if (guestWorkspace) {
     var guestGreeting = guestWorkspace.querySelector("[data-guest-greeting]");
@@ -200,8 +200,13 @@
     var guestForm = guestWorkspace.querySelector("[data-guest-form]");
     var guestInput = guestWorkspace.querySelector("[data-guest-input]");
     var guestSuggestions = guestWorkspace.querySelectorAll("[data-guest-suggestion]");
-    var guestProfileButton = guestWorkspace.querySelector("[data-guest-profile-button]");
+    var guestProfileButtons = guestWorkspace.querySelectorAll("[data-guest-profile-button]");
     var guestProfilePopover = guestWorkspace.querySelector("[data-guest-profile-popover]");
+    var guestLockBanner = guestWorkspace.querySelector("[data-guest-lock-banner]");
+    var guestLockSource = guestWorkspace.querySelector("[data-guest-lock-source]");
+    var guestLockCopy = guestWorkspace.querySelector("[data-guest-lock-copy]");
+    var guestNewChatButton = guestWorkspace.querySelector("[data-guest-new-chat]");
+    var guestLockedItems = guestWorkspace.querySelectorAll("[data-guest-locked]");
     var guestHistoryKey = "ceaser_guest_chat_history_v1";
     var guestMessages = [];
     var guestLoading = false;
@@ -218,11 +223,12 @@
       return guestGreetingText + ", Guest.\n\nWhat can I help you with? Ask about anything public, keep the conversation going, and create your CEASER account whenever you want the full workspace.";
     }
 
-    function accountRequiredNotice() {
+    function accountRequiredNotice(label) {
+      var feature = label ? String(label).toLowerCase() : "this feature";
       return [
-        "Create your CEASER account to unlock this.",
+        label ? label + " is locked for guest sessions." : "This feature is locked for guest sessions.",
         "",
-        "Continue in your personal CEASER workspace.",
+        "Create your CEASER account to unlock " + feature + ".",
         "",
         "[Create Account](/console/?mode=signup)",
         "[Sign In](/console/?mode=login)"
@@ -307,8 +313,10 @@
     }
 
     function setGuestPopover(open) {
-      if (!guestProfileButton || !guestProfilePopover) return;
-      guestProfileButton.setAttribute("aria-expanded", open ? "true" : "false");
+      if (!guestProfilePopover) return;
+      guestProfileButtons.forEach(function (button) {
+        button.setAttribute("aria-expanded", open ? "true" : "false");
+      });
       guestProfilePopover.hidden = !open;
     }
 
@@ -320,13 +328,41 @@
       setGuestPopover(true);
     }
 
+    function hideGuestLockNotice() {
+      if (!guestLockBanner) return;
+      guestLockBanner.hidden = true;
+    }
+
+    function showGuestLockNotice(label) {
+      if (!guestLockBanner) return;
+      if (guestLockSource) guestLockSource.textContent = label ? label + " is locked" : "Locked feature";
+      if (guestLockCopy) guestLockCopy.textContent = label ? "Create your CEASER account to unlock " + label.toLowerCase() + "." : "Create your CEASER account to unlock this feature.";
+      guestLockBanner.hidden = false;
+      closeGuestPopover();
+    }
+
+    function resetGuestConversation() {
+      guestMessages = [{ role: "assistant", content: guestWelcomeMessage(), timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), retryable: false }];
+      lastGuestPrompt = "";
+      guestLoading = false;
+      try {
+        window.sessionStorage.removeItem(guestHistoryKey);
+      } catch (_error) {}
+      hideGuestLockNotice();
+      if (guestInput) guestInput.value = "";
+      renderGuestThread();
+      closeGuestPopover();
+    }
+
     function submitGuestPrompt(message) {
       var prompt = String(message || "").trim();
       if (!prompt || guestLoading) return Promise.resolve();
       lastGuestPrompt = prompt;
+      hideGuestLockNotice();
       pushGuestMessage("user", prompt);
       if (guestRequiresAccount(prompt)) {
-        pushGuestMessage("assistant", accountRequiredNotice(), { retryable: false });
+        showGuestLockNotice("Private features");
+        pushGuestMessage("assistant", accountRequiredNotice("Private features"), { retryable: false });
         return Promise.resolve();
       }
       setGuestLoading(true);
@@ -346,19 +382,35 @@
     ensureGuestHistory();
     renderGuestThread();
 
-    if (guestProfileButton) {
-      guestProfileButton.addEventListener("click", function () {
+    guestProfileButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
         if (guestProfilePopover && !guestProfilePopover.hidden) closeGuestPopover();
         else openGuestPopover();
       });
-      document.addEventListener("click", function (event) {
-        if (!guestProfilePopover || guestProfilePopover.hidden) return;
-        if (guestWorkspace.contains(event.target) && !guestProfileButton.contains(event.target) && !guestProfilePopover.contains(event.target)) {
-          closeGuestPopover();
-        }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!guestProfilePopover || guestProfilePopover.hidden) return;
+      var target = event.target;
+      if (target && guestWorkspace.contains(target) && !guestProfilePopover.contains(target) && !Array.prototype.some.call(guestProfileButtons, function (button) { return button.contains(target); })) {
+        closeGuestPopover();
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeGuestPopover();
+    });
+
+    guestLockedItems.forEach(function (button) {
+      button.addEventListener("click", function () {
+        var label = button.getAttribute("data-locked-label") || button.textContent || "this feature";
+        showGuestLockNotice(label);
       });
-      document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") closeGuestPopover();
+    });
+
+    if (guestNewChatButton) {
+      guestNewChatButton.addEventListener("click", function () {
+        resetGuestConversation();
       });
     }
 
@@ -493,3 +545,4 @@
     }
   })();
 })();
+
