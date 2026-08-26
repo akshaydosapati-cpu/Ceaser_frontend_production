@@ -22,7 +22,7 @@ type AuthStatus = "unknown" | "no_session" | "verifying" | "authenticated" | "un
 const useCases = ["Student", "Professional", "Founder", "Creator", "Developer"]
 
 export function WelcomeGate({ children }: { children: ReactNode }) {
-  const { setCurrentPage } = useApp()
+  const { setCurrentPage, guestDemo } = useApp()
   const [isChecking, setIsChecking] = useState(true)
   const [authStatus, setAuthStatus] = useState<AuthStatus>("unknown")
   const [session, setSession] = useState<AuthSession | null>(null)
@@ -58,6 +58,10 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
   const [selectedVoice, setSelectedVoice] = useState("")
 
   useEffect(() => {
+    if (guestDemo) {
+      setIsChecking(false)
+      return
+    }
     let mounted = true
     const safetyTimer = window.setTimeout(() => {
       if (!mounted) return
@@ -133,7 +137,7 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
       mounted = false
       window.clearTimeout(safetyTimer)
     }
-  }, [])
+  }, [guestDemo])
 
   useEffect(() => {
     const onSessionExpired = () => {
@@ -185,6 +189,8 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
     const stored = readProfile()
     return stored?.name || name || sessionEmail(session)?.split("@")[0] || "there"
   }, [name, session])
+
+  if (guestDemo) return <>{children}</>
 
   if (canOptimisticallyRender) return <>{children}</>
 

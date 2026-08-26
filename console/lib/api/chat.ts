@@ -145,6 +145,11 @@ export interface ChatRequestOptions {
 }
 
 export const chatApi = {
+  sendGuestDemoMessage: (message: string) =>
+    apiRequest<{ response: string; source: string }>("/ceaser/demo", {
+      method: "POST",
+      body: { message },
+    }),
   listConversations: (archived = false) => {
     const params = new URLSearchParams()
     if (archived) params.set("archived", "true")

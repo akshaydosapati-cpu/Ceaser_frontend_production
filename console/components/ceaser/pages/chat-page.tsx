@@ -371,7 +371,7 @@ const rotatingWelcomePrompts = [
 ]
 
 export function ChatPage() {
-  const { setCurrentPage, confirmDialog, promptDialog, pendingChatRequest, clearPendingChatRequest } = useApp()
+  const { setCurrentPage, confirmDialog, promptDialog, pendingChatRequest, clearPendingChatRequest, guestDemo } = useApp()
   const [displayName, setDisplayName] = useState("there")
   // Keep the server and first client render deterministic; update to local
   // time after hydration in the existing interval effect below.
@@ -421,11 +421,15 @@ export function ChatPage() {
   }, [displayName])
 
   useEffect(() => {
+    if (guestDemo) {
+      setDisplayName("Guest")
+      return
+    }
     const refreshGreeting = () => setTimeGreeting(greetingForHour(new Date().getHours()))
     refreshGreeting()
     const timer = window.setInterval(refreshGreeting, 60_000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [guestDemo])
 
   useEffect(() => {
     const phrase = rotatingWelcomePrompts[welcomePromptIndex]
@@ -557,6 +561,7 @@ export function ChatPage() {
   }, [])
 
   const loadConversations = useCallback(async () => {
+    if (guestDemo) return [] as ConversationRecord[]
     if (conversationsRequestRef.current) return conversationsRequestRef.current
     const request = (async () => {
       try {
@@ -574,7 +579,7 @@ export function ChatPage() {
     })()
     conversationsRequestRef.current = request
     return request
-  }, [showArchivedChats])
+  }, [guestDemo, showArchivedChats])
 
   const refreshConversationList = useCallback(async () => {
     try {
@@ -864,6 +869,17 @@ export function ChatPage() {
     let conversationId: string | null = activeConversationId && !showArchivedChats ? activeConversationId : null
     try {
       console.info("[CEASER LATENCY] stream_request_start")
+      if (guestDemo) {
+        const demo = await chatApi.sendGuestDemoMessage(content)
+        setMessages((current) => current.map((message) => message.id === typingMessage.id ? {
+          ...message,
+          content: demo.response,
+          isTyping: false,
+          isStreaming: false,
+          timestamp: formatTime(),
+        } : message))
+        return
+      }
       if (conversationId) {
         const seededMessages = [...messages, userMessage, typingMessage]
         conversationCacheRef.current.set(conversationId, seededMessages)
