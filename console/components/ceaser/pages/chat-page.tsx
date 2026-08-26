@@ -870,7 +870,11 @@ export function ChatPage() {
     try {
       console.info("[CEASER LATENCY] stream_request_start")
       if (guestDemo) {
-        const demo = await chatApi.sendGuestDemoMessage(content)
+        const recentTurns = messages
+          .filter((message) => !message.isTyping && message.content.trim() && (message.role === "user" || message.role === "assistant"))
+          .slice(-6)
+          .map((message) => ({ role: message.role as "user" | "assistant", content: message.content.slice(0, 4000) }))
+        const demo = await chatApi.sendGuestDemoMessage(content, recentTurns)
         setMessages((current) => current.map((message) => message.id === typingMessage.id ? {
           ...message,
           content: demo.response,

@@ -20,7 +20,7 @@ const PROFILE_KEY = "ceaser_user_profile"
 const READ_NOTIFICATIONS_KEY = "ceaser_read_notifications"
 
 export function Header() {
-  const { setIsSearchOpen, currentPage, setCurrentPage, confirmDialog } = useApp()
+  const { setIsSearchOpen, currentPage, setCurrentPage, confirmDialog, guestDemo } = useApp()
   const pageTitle = getPageTitle(currentPage)
   const [profile, setProfile] = useState<{ name?: string; useCase?: string; email?: string } | null>(readUserProfile())
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -40,6 +40,7 @@ export function Header() {
   }, [])
 
   useEffect(() => {
+    if (guestDemo) return
     let mounted = true
     async function loadHeaderData() {
       const [memoryResult, conversationResult] = await Promise.allSettled([
@@ -70,10 +71,10 @@ export function Header() {
       window.removeEventListener("ceaser:saved-response", refresh)
       window.clearInterval(timer)
     }
-  }, [])
+  }, [guestDemo])
 
-  const displayName = getUserDisplayName(profile)
-  const displayRole = getUserDisplayRole(profile)
+  const displayName = guestDemo ? "Guest" : getUserDisplayName(profile)
+  const displayRole = guestDemo ? "Demo account" : getUserDisplayRole(profile)
   const notificationItems = useMemo(() => {
     return [
       memories[0]
