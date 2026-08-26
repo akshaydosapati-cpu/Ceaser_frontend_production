@@ -372,7 +372,7 @@ const rotatingWelcomePrompts = [
 
 export function ChatPage() {
   const { setCurrentPage, confirmDialog, promptDialog, pendingChatRequest, clearPendingChatRequest, guestDemo } = useApp()
-  const [displayName, setDisplayName] = useState("there")
+  const [displayName, setDisplayName] = useState(() => guestDemo ? "Guest" : "there")
   // Keep the server and first client render deterministic; update to local
   // time after hydration in the existing interval effect below.
   const [timeGreeting, setTimeGreeting] = useState("Good afternoon")
@@ -423,7 +423,6 @@ export function ChatPage() {
   useEffect(() => {
     if (guestDemo) {
       setDisplayName("Guest")
-      return
     }
     const refreshGreeting = () => setTimeGreeting(greetingForHour(new Date().getHours()))
     refreshGreeting()
@@ -500,6 +499,7 @@ export function ChatPage() {
   }, [savedResponses, searchQuery])
 
   useEffect(() => {
+    if (guestDemo) return
     const syncProfile = () => {
       const profile = readUserProfile()
       const fullName = getUserDisplayName(profile, "there")
@@ -508,7 +508,7 @@ export function ChatPage() {
     syncProfile()
     window.addEventListener("storage", syncProfile)
     return () => window.removeEventListener("storage", syncProfile)
-  }, [])
+  }, [guestDemo])
 
   const cancelActiveStream = useCallback(() => {
     streamSessionRef.current += 1
