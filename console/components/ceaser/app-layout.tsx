@@ -36,7 +36,7 @@ export function AppLayout({ children, guestDemo = false }: AppLayoutProps) {
 }
 
 function AppLayoutShell({ children }: AppLayoutProps) {
-  const { currentPage, sidebarCollapsed, setSidebarCollapsed } = useApp()
+  const { currentPage, guestDemo, sidebarCollapsed, setSidebarCollapsed } = useApp()
   useEffect(() => {
     recordStartupMetric("app_navigation_start", { page: currentPage })
     recordStartupMetric("shell_visible")
@@ -51,7 +51,7 @@ function AppLayoutShell({ children }: AppLayoutProps) {
             type="button"
             aria-label="Close navigation"
             onClick={() => setSidebarCollapsed(true)}
-            className="fixed inset-0 z-40 bg-black/65 backdrop-blur-[1px] md:hidden"
+            className={cn("fixed inset-0 z-40 bg-black/65 backdrop-blur-[1px]", guestDemo ? "min-[520px]:hidden" : "md:hidden")}
           />
         )}
         {sidebarCollapsed && (
@@ -59,13 +59,17 @@ function AppLayoutShell({ children }: AppLayoutProps) {
             type="button"
             aria-label="Open navigation"
             onClick={() => setSidebarCollapsed(false)}
-            className="fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#0a1020]/90 text-white shadow-xl backdrop-blur-md md:hidden"
+            className={cn("fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#0a1020]/90 text-white shadow-xl backdrop-blur-md", guestDemo ? "min-[520px]:hidden" : "md:hidden")}
           >
             <Menu className="h-5 w-5" />
           </button>
         )}
         <Sidebar />
-        <div className={cn("ceaser-app-frame ml-0 flex min-w-0 flex-1 flex-col overflow-hidden rounded-none border-y border-border bg-card/55 shadow-[0_30px_100px_rgba(0,0,0,0.18)] md:ml-2 md:rounded-lg md:border", currentPage === "chat" && "bg-[#030712]")}>
+        <div className={cn(
+          "ceaser-app-frame ml-0 flex min-w-0 flex-1 flex-col overflow-hidden rounded-none border-y border-border bg-card/55 shadow-[0_30px_100px_rgba(0,0,0,0.18)] md:ml-2 md:rounded-lg md:border",
+          guestDemo && "min-[520px]:ml-2 min-[520px]:rounded-lg min-[520px]:border",
+          currentPage === "chat" && "bg-[#030712]",
+        )}>
           {currentPage !== "chat" && <Header />}
           <main className="min-h-0 flex-1 overflow-y-auto">
             {children}

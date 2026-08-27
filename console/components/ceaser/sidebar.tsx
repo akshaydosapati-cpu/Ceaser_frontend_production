@@ -54,6 +54,7 @@ export function Sidebar() {
 
   return <aside className={cn(
     "ceaser-global-sidebar fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(86vw,300px)] shrink-0 flex-col border-r border-white/[0.08] bg-[#050810] text-white shadow-2xl transition-transform duration-300 ease-out md:static md:h-full md:w-[260px] md:translate-x-0 md:shadow-none",
+    guestDemo && "min-[520px]:static min-[520px]:h-full min-[520px]:w-[260px] min-[520px]:translate-x-0 min-[520px]:shadow-none",
     sidebarCollapsed ? "-translate-x-full" : "translate-x-0",
   )}>
     <button onClick={() => openChat()} className="flex h-[76px] items-center px-4 text-left hover:bg-white/[0.03]"><Image src={darkWordmark} alt="CEASER" width={170} height={42} className="h-9 w-auto object-contain" priority /></button>
