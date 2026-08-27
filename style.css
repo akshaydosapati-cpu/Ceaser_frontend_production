@@ -1043,6 +1043,18 @@ body[data-launch-phase="live"] [data-postlaunch-only]{ display:block; }
 .console-demo-bar span:nth-child(3){background:#34d399}
 .console-demo-bar strong{margin-left:auto;color:rgba(226,232,240,.56);font:600 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
 .console-demo-frame iframe{display:block;width:100%;height:min(760px,78vh);min-height:620px;border:0;background:#030712}
+
+@media (max-width:760px){
+  .try-lab{padding:10px;border-radius:22px}
+  .console-demo-frame{border-radius:17px}
+  .console-demo-bar{height:36px;padding:0 12px}
+  .console-demo-bar strong{font-size:9px}
+  .console-demo-frame iframe{height:700px;min-height:700px}
+}
+
+@media (max-width:420px){
+  .console-demo-frame iframe{height:660px;min-height:660px}
+}
 .try-tabs{
   display:grid;
   grid-template-columns:repeat(5,1fr);
