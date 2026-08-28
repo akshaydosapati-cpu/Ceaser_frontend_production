@@ -46,7 +46,7 @@ interface Message {
 const ACTIVE_CONVERSATION_KEY = "ceaser_active_conversation_id"
 const SAVED_RESPONSES_KEY = "ceaser_saved_responses"
 const SAVED_RESPONSE_EVENT = "ceaser_saved_response"
-const ENABLE_CHAT_SUGGESTIONS = true
+const ENABLE_CHAT_SUGGESTIONS = false
 type ConversationFilter = "all" | "pinned" | "today" | "week"
 
 interface SavedResponse {
@@ -386,6 +386,7 @@ export function ChatPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [conversationFilter, setConversationFilter] = useState<ConversationFilter>("all")
   const [isLoading, setIsLoading] = useState(false)
@@ -470,15 +471,6 @@ export function ChatPage() {
     [messages],
   )
 
-  const livePromptSuggestions = useMemo(() => {
-    if (!input.trim()) return []
-    const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant" && !message.isStreaming)
-    return (latestAssistant?.metadata?.suggestions ?? [])
-      .filter((suggestion) => suggestion.confidence >= 0.45 && suggestion.text.trim())
-      .slice(0, 3)
-      .map((suggestion) => suggestion.text.trim())
-  }, [input, messages])
-
   const updateComposer = useCallback((value: string) => {
     setInput(value)
     window.requestAnimationFrame(() => {
@@ -488,6 +480,26 @@ export function ChatPage() {
       composer.style.height = `${Math.min(composer.scrollHeight, 120)}px`
     })
   }, [])
+
+  useEffect(() => {
+    const query = input.trim()
+    if (query.length < 2 || isLoading || guestDemo) {
+      setAutocompleteSuggestions([])
+      return
+    }
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => {
+      void chatApi.autocomplete(query, controller.signal)
+        .then((response) => setAutocompleteSuggestions(response.suggestions.filter((item) => item.toLowerCase() !== query.toLowerCase()).slice(0, 5)))
+        .catch((error) => {
+          if (!(error instanceof DOMException && error.name === "AbortError")) setAutocompleteSuggestions([])
+        })
+    }, 250)
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [guestDemo, input, isLoading])
 
   const filteredConversations = useMemo(() => {
     const query = searchQuery.toLowerCase().trim()
@@ -1517,7 +1529,7 @@ export function ChatPage() {
             onScroll={captureScrollPosition}
             onWheel={stopFollowingStream}
             onTouchStart={stopFollowingStream}
-            className={cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 md:pr-3", messages.length || isBooting || isActiveChatLoading ? "pt-5 md:pt-10" : "pt-14 md:pt-[9vh]")}
+            className={cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 md:pr-3", messages.length || isBooting || isActiveChatLoading ? "pt-5 md:pt-10" : "flex flex-col justify-end pb-8 pt-8 md:pb-[7vh]")}
           >
             {loadError && (
               <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -1534,7 +1546,7 @@ export function ChatPage() {
                 <div className="ceaser-composer mx-auto mt-10 flex min-h-[112px] w-full max-w-[980px] flex-col rounded-[18px] px-4 py-3 backdrop-blur-2xl">
                   <input ref={chatFileInputRef} type="file" className="hidden" accept=".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg" onChange={(event) => void handleChatFileUpload(event)} />
                   <textarea ref={chatComposerRef} rows={1} value={input} onChange={(event) => updateComposer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void handleSend() } }} placeholder="Ask anything or give a command..." className="min-h-8 max-h-[120px] w-full resize-none overflow-y-auto bg-transparent py-1 text-base leading-6 text-white outline-none placeholder:text-white/50" />
-                  <LivePromptSuggestions suggestions={livePromptSuggestions} onSelect={updateComposer} />
+                  <LivePromptSuggestions suggestions={autocompleteSuggestions} onSelect={updateComposer} />
                   <div className="mt-2 flex items-end gap-3">
                     <button onClick={() => chatFileInputRef.current?.click()} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.025] text-white/70 transition hover:bg-white/[0.07]" title="Attach a file" aria-label="Attach a file"><Paperclip className="h-4 w-4" /></button>
                     <button onClick={() => void handleSend()} disabled={!input.trim()} className="ml-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-[0_0_28px_rgba(0,174,255,.35)] disabled:opacity-45"><Send className="h-5 w-5" /></button>
@@ -1598,7 +1610,7 @@ export function ChatPage() {
                 disabled={isLoading}
                 className="min-h-8 max-h-[120px] min-w-0 w-full resize-none overflow-y-auto bg-transparent py-1 text-base leading-6 text-white outline-none placeholder:text-white/45 disabled:opacity-50"
               />
-              <LivePromptSuggestions suggestions={livePromptSuggestions} onSelect={updateComposer} />
+              <LivePromptSuggestions suggestions={autocompleteSuggestions} onSelect={updateComposer} />
               <div className="mt-2 flex items-end gap-3"><button onClick={() => chatFileInputRef.current?.click()} disabled={isUploadingFile} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:bg-white/[0.06]" title="Attach a file" aria-label="Attach a file">{isUploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}</button>{isLoading ? <button onClick={cancelActiveStream} className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white"><Square className="h-4 w-4 fill-current" /></button> : <button onClick={() => void handleSend()} disabled={!input.trim()} className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-[0_0_24px_rgba(124,58,237,.38)] disabled:opacity-45"><Send className="h-4 w-4" /></button>}</div>
             </div>
             <p className="mt-2 text-center text-[11px] text-white/35">CEASER can make mistakes. Please verify important information.</p>

@@ -146,6 +146,8 @@ export interface ChatRequestOptions {
 }
 
 export const chatApi = {
+  autocomplete: (query: string, signal?: AbortSignal) =>
+    apiRequest<{ suggestions: string[] }>(`/ceaser/chat/autocomplete?query=${encodeURIComponent(query)}`, { signal }),
   sendGuestDemoMessage: (message: string, recentTurns: Array<{ role: "user" | "assistant"; content: string }> = []) =>
     apiRequest<{ response: string; source: string; continuation_count: number }>("/ceaser/demo", {
       method: "POST",
