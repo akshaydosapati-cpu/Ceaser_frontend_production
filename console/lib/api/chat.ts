@@ -21,6 +21,7 @@ export interface ConversationRecord {
   title: string
   pinned: boolean
   archived: boolean
+  project_id?: string | null
   created_at: string
 }
 
@@ -164,7 +165,7 @@ export const chatApi = {
       invalidateApiCache(["/conversations", "/chat/conversations"])
       return response
     }),
-  updateConversation: (conversationId: string, updates: Partial<Pick<ConversationRecord, "title" | "pinned" | "archived">>) =>
+  updateConversation: (conversationId: string, updates: Partial<Pick<ConversationRecord, "title" | "pinned" | "archived" | "project_id">>) =>
     apiRequest<ConversationRecord>(`/conversations/${conversationId}`, {
       method: "PATCH",
       body: updates,

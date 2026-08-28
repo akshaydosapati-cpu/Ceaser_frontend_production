@@ -5,6 +5,7 @@ import type { ChangeEvent, ReactNode } from "react"
 import { chatApi, type AgentContribution, type CeaserChatResponse, type ChatMessage, type ConversationRecord, type MessageMetadata, type RankedMemory, type ResearchResult, type WorkflowResult } from "@/lib/api/chat"
 import { documentsApi, type DocumentKind, type GeneratedDocument } from "@/lib/api/documents"
 import { filesApi, type FileRecord } from "@/lib/api/files"
+import { projectsApi, type ProjectRecord } from "@/lib/api/projects"
 import { useApp } from "@/lib/app-context"
 import { recordStartupMetric } from "@/lib/api/client"
 import { trackEvent } from "@/lib/analytics"
@@ -16,7 +17,7 @@ import { RichResponseRenderer } from "../rich-response-renderer"
 import { FOOTER_VOICE_EVENT } from "../command-bar"
 import { navigationItems } from "@/lib/ceaser"
 import type { VoiceRespondResponse } from "@/lib/api/voice"
-import { Archive, BarChart3, Bookmark, CalendarPlus, Check, CheckCircle2, ChevronLeft, Code2, Copy, Download, Edit3, ExternalLink, FileText, Lightbulb, Loader2, Mail, MessageSquare, MoreHorizontal, Paperclip, PenLine, Pin, PinOff, Plus, Presentation, RefreshCw, RotateCcw, Search, Send, Share2, Sparkles, Square, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
+import { Archive, ArrowLeft, BarChart3, Bookmark, CalendarPlus, Check, CheckCircle2, ChevronLeft, Code2, Copy, Download, Edit3, ExternalLink, FileInput, FileText, FolderKanban, Lightbulb, Loader2, Mail, MessageSquare, MoreHorizontal, Paperclip, PenLine, Pin, PinOff, Plus, Presentation, RefreshCw, RotateCcw, Search, Send, Share2, Sparkles, Square, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 interface Message {
@@ -390,6 +391,9 @@ export function ChatPage() {
   const [attachedFiles, setAttachedFiles] = useState<FileRecord[]>([])
   const [isBooting, setIsBooting] = useState(true)
   const [openConversationMenuId, setOpenConversationMenuId] = useState<string | null>(null)
+  const [moveConversationId, setMoveConversationId] = useState<string | null>(null)
+  const [projects, setProjects] = useState<ProjectRecord[]>([])
+  const [projectsLoading, setProjectsLoading] = useState(false)
   const [seededProjectFileIds, setSeededProjectFileIds] = useState<string[]>([])
   const [showArchivedChats, setShowArchivedChats] = useState(false)
   const [showSavedResponses, setShowSavedResponses] = useState(false)
@@ -825,6 +829,33 @@ export function ChatPage() {
     }
   }
 
+  const handleOpenMoveToProject = async (conversation: ConversationRecord) => {
+    setMoveConversationId(conversation.id)
+    if (projects.length || projectsLoading) return
+    setProjectsLoading(true)
+    try {
+      setProjects(await projectsApi.list())
+      setLoadError(null)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Could not load your projects.")
+    } finally {
+      setProjectsLoading(false)
+    }
+  }
+
+  const handleMoveConversation = async (conversation: ConversationRecord, projectId: string | null) => {
+    try {
+      const updated = await chatApi.updateConversation(conversation.id, { project_id: projectId })
+      setConversations((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setLoadError(null)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Could not move this chat to the project.")
+    } finally {
+      setMoveConversationId(null)
+      setOpenConversationMenuId(null)
+    }
+  }
+
   const ensureConversation = async () => {
     if (activeConversationId && !showArchivedChats) return activeConversationId
     if (showArchivedChats) setShowArchivedChats(false)
@@ -1214,6 +1245,43 @@ export function ChatPage() {
 
   const ActiveLaunchIcon = activeLaunchTask?.icon ?? Sparkles
 
+  const renderConversationMenu = (conversation: ConversationRecord, className: string) => (
+    <div className={cn("absolute z-40 w-56 rounded-xl border border-border bg-popover p-2 shadow-2xl", className)}>
+      {moveConversationId === conversation.id ? (
+        <>
+          <button onClick={() => setMoveConversationId(null)} className="mb-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Move to project
+          </button>
+          <div className="max-h-56 overflow-y-auto">
+            {projectsLoading ? <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading projects...</div> : (
+              <>
+                <ConversationMenuItem icon={X} label="No project" onClick={() => void handleMoveConversation(conversation, null)} />
+                {projects.map((project) => (
+                  <ConversationMenuItem
+                    key={project.id}
+                    icon={FolderKanban}
+                    label={`${project.name}${conversation.project_id === project.id ? " (current)" : ""}`}
+                    onClick={() => void handleMoveConversation(conversation, project.id)}
+                  />
+                ))}
+                {!projects.length && <p className="px-3 py-3 text-xs text-muted-foreground">No projects yet.</p>}
+              </>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <ConversationMenuItem icon={Edit3} label="Rename" onClick={() => void handleRenameConversation(conversation)} />
+          <ConversationMenuItem icon={conversation.pinned ? PinOff : Pin} label={conversation.pinned ? "Unpin" : "Pin"} onClick={() => void handleTogglePinConversation(conversation)} />
+          <ConversationMenuItem icon={FileInput} label="Move to project" onClick={() => void handleOpenMoveToProject(conversation)} />
+          <ConversationMenuItem icon={Share2} label="Share" onClick={() => void handleShareConversation(conversation)} />
+          <ConversationMenuItem icon={conversation.archived ? RotateCcw : Archive} label={conversation.archived ? "Unarchive" : "Archive"} onClick={() => void (conversation.archived ? handleUnarchiveConversation(conversation) : handleArchiveConversation(conversation))} />
+          <ConversationMenuItem icon={Trash2} label="Delete" onClick={() => void handleDeleteConversation(conversation)} danger />
+        </>
+      )}
+    </div>
+  )
+
   return (
     <div className={cn("ceaser-chat relative flex h-full overflow-hidden text-foreground", "bg-[#040714]")}>
       <div className={cn("pointer-events-none absolute inset-0 [background-image:linear-gradient(rgba(148,163,184,.18)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,.18)_1px,transparent_1px)] [background-size:36px_36px]", "opacity-[0.08]")} />
@@ -1289,7 +1357,7 @@ export function ChatPage() {
               </div>
             </div>
 
-            <div className="mt-2 grid grid-cols-4 gap-0.5 px-3">
+            <div className="mt-2 grid grid-cols-5 gap-0.5 px-3">
               {([["all", "All"], ["pinned", "Pinned"], ["today", "Today"], ["week", "This Week"]] as const).map(([value, label]) => (
                 <button
                   key={value}
@@ -1298,11 +1366,21 @@ export function ChatPage() {
                     setShowArchivedChats(false)
                     setConversationFilter(value)
                   }}
-                  className={cn("rounded-md px-1 py-1.5 text-[10px] font-medium transition", conversationFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground")}
+                  className={cn("rounded-md px-1 py-1.5 text-[10px] font-medium transition", !showArchivedChats && conversationFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground")}
                 >
                   {label}
                 </button>
               ))}
+              <button
+                onClick={() => {
+                  setShowSavedResponses(false)
+                  setShowArchivedChats(true)
+                  setConversationFilter("all")
+                }}
+                className={cn("rounded-md px-1 py-1.5 text-[10px] font-medium transition", showArchivedChats ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground")}
+              >
+                Archived
+              </button>
             </div>
           </>
         )}
@@ -1363,19 +1441,14 @@ export function ChatPage() {
                     </div>
                   </button>
                   <button
-                    onClick={() => setOpenConversationMenuId(openConversationMenuId === conversation.id ? null : conversation.id)}
-                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground opacity-0 transition hover:bg-secondary hover:text-foreground group-hover:opacity-100"
+                    onClick={() => { setMoveConversationId(null); setOpenConversationMenuId(openConversationMenuId === conversation.id ? null : conversation.id) }}
+                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground opacity-100 transition hover:bg-secondary hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                    aria-label={`Options for ${conversation.title}`}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
                   {openConversationMenuId === conversation.id && (
-                    <div className="absolute right-2 top-11 z-30 w-48 rounded-2xl border border-border bg-popover p-2 shadow-2xl">
-                      <ConversationMenuItem icon={Edit3} label="Rename" onClick={() => void handleRenameConversation(conversation)} />
-                      <ConversationMenuItem icon={conversation.pinned ? PinOff : Pin} label={conversation.pinned ? "Unpin" : "Pin"} onClick={() => void handleTogglePinConversation(conversation)} />
-                      <ConversationMenuItem icon={Share2} label="Share" onClick={() => void handleShareConversation(conversation)} />
-                      <ConversationMenuItem icon={conversation.archived ? RotateCcw : Archive} label={conversation.archived ? "Unarchive" : "Archive"} onClick={() => void (conversation.archived ? handleUnarchiveConversation(conversation) : handleArchiveConversation(conversation))} />
-                      <ConversationMenuItem icon={Trash2} label="Delete" onClick={() => void handleDeleteConversation(conversation)} danger />
-                    </div>
+                    renderConversationMenu(conversation, "right-2 top-11")
                   )}
                 </div>
               ))}
@@ -1388,7 +1461,7 @@ export function ChatPage() {
 
       <main className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
         <section className={cn("relative flex min-h-0 w-full flex-1 flex-col px-4 pb-4 pt-12 md:px-8 md:pb-5 md:pt-0 lg:px-16", guestDemo && "min-[520px]:px-8 min-[520px]:pb-5 min-[520px]:pt-0")}>
-          {messages.length ? <header className={cn("-mx-4 flex h-16 shrink-0 items-center border-b border-white/[0.08] px-4 md:-mx-8 md:h-20 md:px-8 lg:-mx-16 lg:px-10", guestDemo && "min-[520px]:-mx-8 min-[520px]:h-20 min-[520px]:px-8")}><h1 className="truncate text-base font-semibold text-white md:text-lg">{activeConversation?.title || firstMeaningfulLine(messages.find((item) => item.role === "user")?.content || "CEASER conversation")}</h1>{activeConversation ? <><button onClick={() => void handleTogglePinConversation(activeConversation)} className={cn("ml-3 transition hover:text-cyan-200", activeConversation.pinned ? "text-cyan-300" : "text-white/55")} title={activeConversation.pinned ? "Unpin chat" : "Pin chat"} aria-label={activeConversation.pinned ? "Unpin chat" : "Pin chat"}><Star className={cn("h-4 w-4", activeConversation.pinned && "fill-current")} /></button><div className="relative ml-auto"><button onClick={() => setOpenConversationMenuId(openConversationMenuId === activeConversation.id ? null : activeConversation.id)} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white" aria-label="Chat options"><MoreHorizontal className="h-5 w-5" /></button>{openConversationMenuId === activeConversation.id ? <div className="absolute right-0 top-11 z-40 w-48 rounded-2xl border border-border bg-popover p-2 shadow-2xl"><ConversationMenuItem icon={Edit3} label="Rename" onClick={() => void handleRenameConversation(activeConversation)} /><ConversationMenuItem icon={activeConversation.pinned ? PinOff : Pin} label={activeConversation.pinned ? "Unpin" : "Pin"} onClick={() => void handleTogglePinConversation(activeConversation)} /><ConversationMenuItem icon={activeConversation.archived ? RotateCcw : Archive} label={activeConversation.archived ? "Unarchive" : "Archive"} onClick={() => void (activeConversation.archived ? handleUnarchiveConversation(activeConversation) : handleArchiveConversation(activeConversation))} /><ConversationMenuItem icon={Trash2} label="Delete" onClick={() => void handleDeleteConversation(activeConversation)} danger /></div> : null}</div></> : null}</header> : null}
+          {messages.length ? <header className={cn("-mx-4 flex h-16 shrink-0 items-center border-b border-white/[0.08] px-4 md:-mx-8 md:h-20 md:px-8 lg:-mx-16 lg:px-10", guestDemo && "min-[520px]:-mx-8 min-[520px]:h-20 min-[520px]:px-8")}><h1 className="truncate text-base font-semibold text-white md:text-lg">{activeConversation?.title || firstMeaningfulLine(messages.find((item) => item.role === "user")?.content || "CEASER conversation")}</h1>{activeConversation ? <><button onClick={() => void handleTogglePinConversation(activeConversation)} className={cn("ml-3 transition hover:text-cyan-200", activeConversation.pinned ? "text-cyan-300" : "text-white/55")} title={activeConversation.pinned ? "Unpin chat" : "Pin chat"} aria-label={activeConversation.pinned ? "Unpin chat" : "Pin chat"}><Star className={cn("h-4 w-4", activeConversation.pinned && "fill-current")} /></button><div className="relative ml-auto"><button onClick={() => { setMoveConversationId(null); setOpenConversationMenuId(openConversationMenuId === activeConversation.id ? null : activeConversation.id) }} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white" aria-label="Chat options"><MoreHorizontal className="h-5 w-5" /></button>{openConversationMenuId === activeConversation.id ? renderConversationMenu(activeConversation, "right-0 top-11") : null}</div></> : null}</header> : null}
           <div
             ref={chatScrollRef}
             onScroll={captureScrollPosition}
