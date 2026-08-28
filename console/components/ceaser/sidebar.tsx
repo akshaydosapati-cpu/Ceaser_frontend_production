@@ -49,6 +49,25 @@ export function Sidebar() {
     return () => document.removeEventListener("mousedown", closeMenu)
   }, [])
 
+  useEffect(() => {
+    const syncConversationChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ action?: string; conversationId?: string; conversation?: ConversationRecord; conversations?: ConversationRecord[] }>).detail || {}
+      if (detail.action === "created" && detail.conversation) {
+        setChats((current) => [detail.conversation as ConversationRecord, ...current.filter((item) => item.id !== detail.conversation?.id)])
+      } else if (detail.action === "updated" && detail.conversation) {
+        setChats((current) => current.map((item) => item.id === detail.conversation?.id ? detail.conversation as ConversationRecord : item).filter((item) => !item.archived))
+      } else if (detail.action === "deleted" && detail.conversationId) {
+        setChats((current) => current.filter((item) => item.id !== detail.conversationId))
+      } else if (detail.action === "synced" && detail.conversations) {
+        setChats(detail.conversations)
+      } else if (detail.action === "reload") {
+        void chatApi.listConversations(false).then(setChats).catch(() => undefined)
+      }
+    }
+    window.addEventListener("ceaser:conversations-changed", syncConversationChange)
+    return () => window.removeEventListener("ceaser:conversations-changed", syncConversationChange)
+  }, [])
+
   const publishConversationChange = (detail: Record<string, unknown>) => {
     window.dispatchEvent(new CustomEvent("ceaser:conversations-changed", { detail }))
   }

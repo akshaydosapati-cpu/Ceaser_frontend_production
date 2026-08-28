@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent, ReactNode } from "react"
+import Image from "next/image"
+import ceaserFavicon from "@/public/favicon.png"
 import { chatApi, type AgentContribution, type CeaserChatResponse, type ChatMessage, type ConversationRecord, type MessageMetadata, type RankedMemory, type ResearchResult, type WorkflowResult } from "@/lib/api/chat"
 import { documentsApi, type DocumentKind, type GeneratedDocument } from "@/lib/api/documents"
 import { filesApi, type FileRecord } from "@/lib/api/files"
@@ -11,13 +13,12 @@ import { recordStartupMetric } from "@/lib/api/client"
 import { trackEvent } from "@/lib/analytics"
 import { getUserDisplayName, readUserProfile } from "@/lib/user-profile"
 import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CeaserLogo } from "../ceaser-logo"
 import { RichResponseRenderer } from "../rich-response-renderer"
 import { FOOTER_VOICE_EVENT } from "../command-bar"
 import { navigationItems } from "@/lib/ceaser"
 import type { VoiceRespondResponse } from "@/lib/api/voice"
-import { Archive, ArrowLeft, BarChart3, Bookmark, CalendarPlus, Check, CheckCircle2, ChevronLeft, Code2, Copy, Download, Edit3, ExternalLink, FileInput, FileText, FolderKanban, Lightbulb, Loader2, Mail, MessageSquare, MoreHorizontal, Paperclip, PenLine, Pin, PinOff, Plus, Presentation, RefreshCw, RotateCcw, Search, Send, Share2, Sparkles, Square, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
+import { Archive, ArrowLeft, BarChart3, Bookmark, CalendarPlus, Check, CheckCircle2, ChevronLeft, Code2, Copy, Download, Edit3, ExternalLink, FileInput, FileText, FolderKanban, Lightbulb, Loader2, Mail, MessageSquare, MoreHorizontal, Paperclip, PenLine, Pin, PinOff, Plus, Presentation, Puzzle, RefreshCw, RotateCcw, Search, Send, Share2, Sparkles, Square, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 interface Message {
@@ -38,13 +39,14 @@ interface Message {
   richResponse?: CeaserChatResponse["rich_response"]
   isTyping?: boolean
   isStreaming?: boolean
+  loadingMode?: "thinking" | "solving" | "searching" | "working"
   statusLabel?: string
 }
 
 const ACTIVE_CONVERSATION_KEY = "ceaser_active_conversation_id"
 const SAVED_RESPONSES_KEY = "ceaser_saved_responses"
 const SAVED_RESPONSE_EVENT = "ceaser_saved_response"
-const ENABLE_CHAT_SUGGESTIONS = false
+const ENABLE_CHAT_SUGGESTIONS = true
 type ConversationFilter = "all" | "pinned" | "today" | "week"
 
 interface SavedResponse {
@@ -105,18 +107,18 @@ const studentWorkflowShortcuts: LaunchTask[] = [
   { title: "Lecture Notes to Revision Kit", subtitle: "Transform attached notes", icon: FileText, color: "text-cyan-300 bg-cyan-500/12", instruction: "Turn the attached lecture notes into study notes, key questions, and a study plan for", output: "revision kit document", requiresFile: true },
 ]
 
-const hfTextModelOptions = [
-  { id: "auto", label: "Auto" },
-  { id: "nvidia-nemotron-3-ultra-550b-a55b", label: "Nemotron 3 Ultra 550B" },
-  { id: "openai-primary", label: "OpenAI" },
-  { id: "groq-primary", label: "Groq" },
-  { id: "gemini-primary", label: "Gemini" },
-]
-
 const isImageGenerationRequest = (message: string) => {
   const normalized = message.toLowerCase().replace(/\s+/g, " ").trim()
   return /\b(create|generate|make|design|draw|illustrate)\b/.test(normalized)
     && /\b(image|picture|photo|illustration|artwork|poster|wallpaper|logo|thumbnail)\b/.test(normalized)
+}
+
+const loadingModeForPrompt = (message: string): NonNullable<Message["loadingMode"]> => {
+  const normalized = message.toLowerCase()
+  if (/\b(code|coding|html|css|javascript|typescript|python|react|api|debug|function|website|app)\b/.test(normalized)) return "solving"
+  if (/\b(plugin|integration|gmail|calendar|notion|github|drive|tasks|classroom)\b/.test(normalized)) return "searching"
+  if (/\b(create|generate|make|build|write|draft|design|presentation|document|report|image|spreadsheet)\b/.test(normalized)) return "working"
+  return "thinking"
 }
 
 const agentNameToId = (name: string) => name.toLowerCase()
@@ -399,7 +401,6 @@ export function ChatPage() {
   const [showSavedResponses, setShowSavedResponses] = useState(false)
   const [savedResponses, setSavedResponses] = useState<SavedResponse[]>([])
   const [chatSidebarCollapsed, setChatSidebarCollapsed] = useState(false)
-  const [modelPreference, setModelPreference] = useState("auto")
   const [activeLaunchTask, setActiveLaunchTask] = useState<LaunchTask | null>(null)
   const [launchTaskTopic, setLaunchTaskTopic] = useState("")
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -407,7 +408,7 @@ export function ChatPage() {
   const chatScrollRef = useRef<HTMLDivElement>(null)
   const shouldFollowStreamRef = useRef(true)
   const chatFileInputRef = useRef<HTMLInputElement>(null)
-  const chatComposerRef = useRef<HTMLInputElement>(null)
+  const chatComposerRef = useRef<HTMLTextAreaElement>(null)
   const preferredConversationRef = useRef<string | null>(null)
   const conversationCacheRef = useRef(new Map<string, Message[]>())
   const conversationRequestCacheRef = useRef(new Map<string, Promise<Message[]>>())
@@ -469,6 +470,25 @@ export function ChatPage() {
     [messages],
   )
 
+  const livePromptSuggestions = useMemo(() => {
+    if (!input.trim()) return []
+    const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant" && !message.isStreaming)
+    return (latestAssistant?.metadata?.suggestions ?? [])
+      .filter((suggestion) => suggestion.confidence >= 0.45 && suggestion.text.trim())
+      .slice(0, 3)
+      .map((suggestion) => suggestion.text.trim())
+  }, [input, messages])
+
+  const updateComposer = useCallback((value: string) => {
+    setInput(value)
+    window.requestAnimationFrame(() => {
+      const composer = chatComposerRef.current
+      if (!composer) return
+      composer.style.height = "auto"
+      composer.style.height = `${Math.min(composer.scrollHeight, 120)}px`
+    })
+  }, [])
+
   const filteredConversations = useMemo(() => {
     const query = searchQuery.toLowerCase().trim()
     const now = new Date()
@@ -490,11 +510,6 @@ export function ChatPage() {
     () => conversations.find((item) => item.id === activeConversationId) ?? null,
     [activeConversationId, conversations],
   )
-
-  const selectedModelLabel = useMemo(() => {
-    const option = hfTextModelOptions.find((item) => item.id === modelPreference)
-    return option?.label ?? "Auto"
-  }, [modelPreference])
 
   const filteredSavedResponses = useMemo(() => {
     const query = searchQuery.toLowerCase().trim()
@@ -589,6 +604,7 @@ export function ChatPage() {
     try {
       const records = await chatApi.listConversations(showArchivedChats)
       setConversations(records)
+      window.dispatchEvent(new CustomEvent("ceaser:conversations-changed", { detail: { action: "synced", conversations: records } }))
       setLoadError(null)
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Conversation list is still loading.")
@@ -870,6 +886,7 @@ export function ChatPage() {
     if (showArchivedChats) setShowArchivedChats(false)
     const conversation = await chatApi.createConversation()
     setConversations((current) => [conversation, ...current])
+    window.dispatchEvent(new CustomEvent("ceaser:conversations-changed", { detail: { action: "created", conversation } }))
     setActiveConversationId(conversation.id)
     window.localStorage.setItem(ACTIVE_CONVERSATION_KEY, conversation.id)
     return conversation.id
@@ -900,6 +917,7 @@ export function ChatPage() {
       timestamp: formatTime(),
       isTyping: true,
       isStreaming: true,
+      loadingMode: loadingModeForPrompt(content),
     }
     setMessages((current) => [...current, userMessage, typingMessage])
     const sendClickedAt = performance.now()
@@ -942,7 +960,6 @@ export function ChatPage() {
         let streamError: string | null = null
         if (imageGenerationRequested) {
           response = await chatApi.sendCeaserMessage(content, conversationId ?? undefined, fileIds, {
-            modelPreference: modelPreference === "auto" ? undefined : modelPreference,
             responseMode: "image",
             forceLiveWebSearch: false,
           })
@@ -981,7 +998,7 @@ export function ChatPage() {
               if (streamSessionRef.current !== streamSessionId) return
               streamError = message
             },
-          }, { signal: controller.signal, modelPreference: modelPreference === "auto" ? undefined : modelPreference, forceLiveWebSearch: false })
+          }, { signal: controller.signal, forceLiveWebSearch: false })
           if (streamError) throw new Error(streamError)
         }
       } catch (error) {
@@ -1514,34 +1531,12 @@ export function ChatPage() {
                   <span className="ceaser-gradient-text">{typedWelcomePrompt}</span><span className="ceaser-typewriter-caret" aria-hidden="true" />
                 </h1>
 
-                <div className="ceaser-composer mx-auto mt-10 flex min-h-[156px] w-full max-w-[980px] flex-col rounded-[22px] p-5 backdrop-blur-2xl">
+                <div className="ceaser-composer mx-auto mt-10 flex min-h-[112px] w-full max-w-[980px] flex-col rounded-[18px] px-4 py-3 backdrop-blur-2xl">
                   <input ref={chatFileInputRef} type="file" className="hidden" accept=".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg" onChange={(event) => void handleChatFileUpload(event)} />
-                  <input ref={chatComposerRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => event.key === "Enter" && handleSend()} placeholder="Ask anything or give a command..." className="min-h-14 w-full bg-transparent text-base text-white outline-none placeholder:text-white/50" />
-                  <div className="mt-auto flex items-center gap-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          className={cn(
-                            "flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.025] px-3 text-white/75 transition hover:bg-white/[0.05] hover:text-white",
-                            modelPreference !== "auto" && "border-cyan-300/30 bg-cyan-300/8 text-cyan-100",
-                          )}
-                          aria-label={`Choose CEASER model. Current: ${selectedModelLabel}`}
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          <span className="max-w-28 truncate text-xs font-medium">{selectedModelLabel}</span>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" side="top" sideOffset={12} className="w-[260px] border-white/10 bg-[#050914]/98 p-2 text-white shadow-2xl backdrop-blur-xl">
-                        <DropdownMenuRadioGroup value={modelPreference} onValueChange={setModelPreference} className="space-y-1">
-                          {hfTextModelOptions.map((item) => (
-                            <DropdownMenuRadioItem key={item.id} value={item.id} className="rounded-lg px-2.5 py-2 text-sm font-medium text-white data-[state=checked]:bg-white/[0.06]">
-                              {item.label}
-                            </DropdownMenuRadioItem>
-                          ))}
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <button onClick={() => chatFileInputRef.current?.click()} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.025] text-white/70"><Plus className="h-5 w-5" /></button>
+                  <textarea ref={chatComposerRef} rows={1} value={input} onChange={(event) => updateComposer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void handleSend() } }} placeholder="Ask anything or give a command..." className="min-h-8 max-h-[120px] w-full resize-none overflow-y-auto bg-transparent py-1 text-base leading-6 text-white outline-none placeholder:text-white/50" />
+                  <LivePromptSuggestions suggestions={livePromptSuggestions} onSelect={updateComposer} />
+                  <div className="mt-2 flex items-end gap-3">
+                    <button onClick={() => chatFileInputRef.current?.click()} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.025] text-white/70 transition hover:bg-white/[0.07]" title="Attach a file" aria-label="Attach a file"><Paperclip className="h-4 w-4" /></button>
                     <button onClick={() => void handleSend()} disabled={!input.trim()} className="ml-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-[0_0_28px_rgba(0,174,255,.35)] disabled:opacity-45"><Send className="h-5 w-5" /></button>
                   </div>
                 </div>
@@ -1585,7 +1580,7 @@ export function ChatPage() {
               </div>
             ) : null}
 
-            <div className="ceaser-conversation-composer mx-auto flex min-h-[96px] w-full max-w-[980px] flex-col rounded-[20px] px-5 py-4 backdrop-blur-2xl">
+            <div className="ceaser-conversation-composer mx-auto flex min-h-[72px] w-full max-w-[980px] flex-col rounded-[18px] px-4 py-3 backdrop-blur-2xl">
               <input
                 ref={chatFileInputRef}
                 type="file"
@@ -1593,17 +1588,18 @@ export function ChatPage() {
                 accept=".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg"
                 onChange={(event) => void handleChatFileUpload(event)}
               />
-              <input
+              <textarea
                 ref={chatComposerRef}
-                type="text"
+                rows={1}
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && handleSend()}
+                onChange={(event) => updateComposer(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void handleSend() } }}
                 placeholder="Ask anything or give a command..."
                 disabled={isLoading}
-                className="h-10 min-w-0 w-full bg-transparent text-base text-white outline-none placeholder:text-white/45 disabled:opacity-50"
+                className="min-h-8 max-h-[120px] min-w-0 w-full resize-none overflow-y-auto bg-transparent py-1 text-base leading-6 text-white outline-none placeholder:text-white/45 disabled:opacity-50"
               />
-              <div className="mt-auto flex items-center gap-3"><button onClick={() => chatFileInputRef.current?.click()} disabled={isUploadingFile} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:bg-white/[0.06]">{isUploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}</button>{isLoading ? <button onClick={cancelActiveStream} className="ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-rose-500 text-white"><Square className="h-4 w-4 fill-current" /></button> : <button onClick={() => void handleSend()} disabled={!input.trim()} className="ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-[0_0_24px_rgba(124,58,237,.38)] disabled:opacity-45"><Send className="h-4 w-4" /></button>}</div>
+              <LivePromptSuggestions suggestions={livePromptSuggestions} onSelect={updateComposer} />
+              <div className="mt-2 flex items-end gap-3"><button onClick={() => chatFileInputRef.current?.click()} disabled={isUploadingFile} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:bg-white/[0.06]" title="Attach a file" aria-label="Attach a file">{isUploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}</button>{isLoading ? <button onClick={cancelActiveStream} className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white"><Square className="h-4 w-4 fill-current" /></button> : <button onClick={() => void handleSend()} disabled={!input.trim()} className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-[0_0_24px_rgba(124,58,237,.38)] disabled:opacity-45"><Send className="h-4 w-4" /></button>}</div>
             </div>
             <p className="mt-2 text-center text-[11px] text-white/35">CEASER can make mistakes. Please verify important information.</p>
           </div>
@@ -1780,6 +1776,22 @@ function StructuredList({ title, items, tone = "cyan" }: { title: string; items:
   return <section className="rounded-xl border border-white/10 bg-black/15 p-3"><p className={cn("text-xs font-semibold uppercase tracking-[0.14em]", tone === "amber" ? "text-amber-200" : "text-cyan-200")}>{title}</p><ul className="mt-2 space-y-1.5 text-sm text-white/70">{items.map((item, index) => <li key={`${item}-${index}`} className="flex gap-2"><span className={tone === "amber" ? "text-amber-300" : "text-cyan-300"}>•</span><span>{item}</span></li>)}</ul></section>
 }
 
+function LivePromptSuggestions({ suggestions, onSelect }: { suggestions: string[]; onSelect: (suggestion: string) => void }) {
+  if (!suggestions.length) return null
+  return <div className="mt-2 flex gap-2 overflow-x-auto pb-1" aria-label="Related suggestions">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => onSelect(suggestion)} className="shrink-0 rounded-full border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-1.5 text-xs text-cyan-100/80 transition hover:border-cyan-300/35 hover:bg-cyan-300/10 hover:text-cyan-50">{suggestion}</button>)}</div>
+}
+
+function ChatLoadingState({ mode = "thinking" }: { mode?: Message["loadingMode"] }) {
+  const config = {
+    solving: { label: "Solving...", icon: Code2 },
+    searching: { label: "Agent searching...", icon: Puzzle },
+    working: { label: "Working...", icon: Sparkles },
+    thinking: { label: "Thinking...", icon: Loader2 },
+  }[mode]
+  const Icon = config.icon
+  return <div className="mb-3 inline-flex h-8 items-center gap-2 rounded-full border border-violet-300/15 bg-violet-400/[0.07] px-3 text-xs font-medium text-violet-100/85 shadow-[0_0_18px_rgba(139,92,246,.08)]" role="status"><Icon className={cn("h-3.5 w-3.5 text-violet-300", mode === "thinking" || mode === "searching" ? "animate-spin" : "animate-pulse")} /><span>{config.label}</span></div>
+}
+
 function ChatBubble({
   message,
   previousUserPrompt,
@@ -1796,15 +1808,10 @@ function ChatBubble({
   const isUser = message.role === "user"
   return (
     <div className={cn("flex w-full gap-4", isUser ? "justify-end" : "justify-start")}>
-      {!isUser && <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-violet-500/45 bg-violet-500/10 text-violet-300 shadow-[0_0_24px_rgba(139,92,246,.14)]"><Sparkles className="h-5 w-5" /></div>}
-      <div className={cn(isUser ? "max-w-[68%] text-white" : "min-w-0 flex-1 text-white")}>
-        {!isUser && <div className="mb-3 flex items-center gap-3"><span className="font-semibold text-violet-400">CEASER</span><span className="text-xs text-white/40">{message.timestamp}</span>{!message.isTyping && !message.isStreaming ? <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/[0.07] px-4 py-2 text-xs text-emerald-400"><Check className="h-3.5 w-3.5" />Completed</span> : null}</div>}
-        {message.isTyping ? (
-          <div className="flex items-center gap-2 text-white/55">
-            <Loader2 className="h-4 w-4 animate-spin" aria-label="Generating response" />
-          </div>
-        ) : (
-          <>
+      <div className={cn(isUser ? "group/user relative max-w-[78%] pb-7 text-white md:max-w-[68%]" : "min-w-0 flex-1 text-white")}>
+        {!isUser && <div className="mb-3 flex items-center gap-2"><Image src={ceaserFavicon} alt="CEASER" className="h-7 w-7 rounded-full" /><span className="text-xs text-white/40">{message.timestamp}</span>{!message.isTyping && !message.isStreaming ? <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/[0.07] px-3 py-1.5 text-xs text-emerald-400"><Check className="h-3.5 w-3.5" />Completed</span> : null}</div>}
+        {!isUser && (message.isTyping || message.isStreaming) ? <ChatLoadingState mode={message.loadingMode} /> : null}
+        {message.isTyping && !message.content ? null : <>
           <div className={cn(isUser ? "rounded-2xl border border-violet-500/45 bg-gradient-to-br from-violet-500/[0.16] to-purple-900/[0.16] px-5 py-4 shadow-[0_14px_45px_rgba(76,29,149,.12)]" : "rounded-2xl border border-white/[0.12] bg-[#080d1b]/76 p-5 shadow-[0_20px_60px_rgba(0,0,0,.2)]")}>
             {isUser && <div className="mb-2 flex items-center justify-between text-xs"><span className="font-semibold text-violet-300">You</span><span className="text-white/45">{message.timestamp}</span></div>}
             {message.role === "assistant" && !message.isStreaming && message.richResponse && hasStructuredRichContent(message.richResponse)
@@ -1825,22 +1832,12 @@ function ChatBubble({
             ) : message.role === "assistant" && !message.isStreaming && message.research?.sources?.some((source) => source.image_url) ? (
               <ResearchImageStrip images={message.research.sources.filter((source) => source.image_url).map((source) => ({ title: source.title, url: source.url, image_url: source.image_url as string, source: source.source }))} />
             ) : null}
-            {message.role === "user" && (
-              <button
-                onClick={() => onEdit(message)}
-                className="ml-auto mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white/48 transition hover:bg-white/[0.08] hover:text-white"
-                title="Edit and resend message"
-              >
-                <Edit3 className="h-3.5 w-3.5" />
-                Edit
-              </button>
-            )}
           </div>
           {message.role === "assistant" && !message.isStreaming && (
               <ResponseActions message={message} previousUserPrompt={previousUserPrompt} onPromptSelect={onPromptSelect} />
           )}
-          </>
-        )}
+          </>}
+        {isUser ? <button onClick={() => onEdit(message)} className="absolute bottom-0 right-0 inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-white/48 opacity-100 transition hover:bg-white/[0.08] hover:text-white focus:opacity-100 sm:opacity-0 sm:group-hover/user:opacity-100" title="Edit and resend message"><Edit3 className="h-3.5 w-3.5" />Edit</button> : null}
       </div>
       {isUser && (
         <div className="mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-700 text-xs font-semibold text-white">
