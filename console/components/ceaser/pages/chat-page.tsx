@@ -793,11 +793,12 @@ export function ChatPage() {
       tone: "danger",
     })
     if (!confirmed) return
-    await chatApi.deleteConversation(conversation.id)
-    const remaining = conversations.filter((item) => item.id !== conversation.id)
+    const previous = conversations
+    const remaining = previous.filter((item) => item.id !== conversation.id)
     setConversations(remaining)
     setOpenConversationMenuId(null)
     conversationCacheRef.current.delete(conversation.id)
+    window.dispatchEvent(new CustomEvent("ceaser:conversations-changed", { detail: { action: "deleted", conversationId: conversation.id } }))
     if (activeConversationId === conversation.id) {
       cancelActiveStream()
       const next = remaining[0]
@@ -809,6 +810,14 @@ export function ChatPage() {
         window.localStorage.removeItem(ACTIVE_CONVERSATION_KEY)
         setMessages([])
       }
+    }
+    try {
+      await chatApi.deleteConversation(conversation.id)
+      setLoadError(null)
+    } catch (error) {
+      setConversations(previous)
+      window.dispatchEvent(new CustomEvent("ceaser:conversations-changed", { detail: { action: "reload" } }))
+      setLoadError(error instanceof Error ? error.message : "Could not delete this chat.")
     }
   }
 
@@ -1204,6 +1213,30 @@ export function ChatPage() {
     window.addEventListener(FOOTER_VOICE_EVENT, handleFooterVoiceResponse)
     return () => window.removeEventListener(FOOTER_VOICE_EVENT, handleFooterVoiceResponse)
   })
+
+  useEffect(() => {
+    const syncConversationChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ action?: string; conversationId?: string; conversation?: ConversationRecord }>).detail || {}
+      if (detail.action === "deleted" && detail.conversationId) {
+        setConversations((current) => current.filter((item) => item.id !== detail.conversationId))
+        conversationCacheRef.current.delete(detail.conversationId)
+        if (activeConversationId === detail.conversationId) {
+          cancelActiveStream()
+          setActiveConversationId(null)
+          window.localStorage.removeItem(ACTIVE_CONVERSATION_KEY)
+          setMessages([])
+        }
+        return
+      }
+      if (detail.action === "updated" && detail.conversation) {
+        setConversations((current) => current.map((item) => item.id === detail.conversation?.id ? detail.conversation : item).filter((item) => !item.archived) as ConversationRecord[])
+        return
+      }
+      if (detail.action === "reload") void loadConversations()
+    }
+    window.addEventListener("ceaser:conversations-changed", syncConversationChange)
+    return () => window.removeEventListener("ceaser:conversations-changed", syncConversationChange)
+  }, [activeConversationId, cancelActiveStream, loadConversations])
 
   const handleChatFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
