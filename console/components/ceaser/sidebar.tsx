@@ -95,7 +95,7 @@ export function Sidebar() {
   }
 
   const filteredProjects = useMemo(() => projects.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())).slice(0, 7), [projects, query])
-  const filteredChats = useMemo(() => chats.filter((item) => item.title.toLowerCase().includes(query.toLowerCase())).slice(0, 9), [chats, query])
+  const filteredChats = useMemo(() => chats.filter((item) => item.title.toLowerCase().includes(query.toLowerCase())), [chats, query])
   const openChat = (id?: string) => {
     if (id) window.localStorage.setItem("ceaser_active_conversation_id", id)
     else window.localStorage.removeItem("ceaser_active_conversation_id")

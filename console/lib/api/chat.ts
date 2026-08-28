@@ -154,6 +154,7 @@ export const chatApi = {
   listConversations: (archived = false) => {
     const params = new URLSearchParams()
     if (archived) params.set("archived", "true")
+    params.set("limit", "500")
     const query = params.toString() ? `?${params.toString()}` : ""
     return apiRequest<ConversationRecord[]>(`/conversations${query}`, { cacheTtlMs: 300000 })
   },
