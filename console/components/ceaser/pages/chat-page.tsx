@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent, ReactNode } from "react"
 import Image from "next/image"
 import ceaserFavicon from "@/public/favicon.png"
+import { ThinkingOrb, type OrbState } from "thinking-orbs"
 import { chatApi, type AgentContribution, type CeaserChatResponse, type ChatMessage, type ConversationRecord, type MessageMetadata, type RankedMemory, type ResearchResult, type WorkflowResult } from "@/lib/api/chat"
 import { documentsApi, type DocumentKind, type GeneratedDocument } from "@/lib/api/documents"
 import { filesApi, type FileRecord } from "@/lib/api/files"
@@ -18,7 +19,7 @@ import { RichResponseRenderer } from "../rich-response-renderer"
 import { FOOTER_VOICE_EVENT } from "../command-bar"
 import { navigationItems } from "@/lib/ceaser"
 import type { VoiceRespondResponse } from "@/lib/api/voice"
-import { Archive, ArrowLeft, BarChart3, Bookmark, CalendarPlus, Check, CheckCircle2, ChevronLeft, Code2, Copy, Download, Edit3, ExternalLink, FileInput, FileText, FolderKanban, Lightbulb, Loader2, Mail, MessageSquare, MoreHorizontal, Paperclip, PenLine, Pin, PinOff, Plus, Presentation, Puzzle, RefreshCw, RotateCcw, Search, Send, Share2, Sparkles, Square, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
+import { Archive, ArrowLeft, BarChart3, Bookmark, CalendarPlus, Check, CheckCircle2, ChevronLeft, Code2, Copy, Download, Edit3, ExternalLink, FileInput, FileText, FolderKanban, Lightbulb, Loader2, Mail, MessageSquare, MoreHorizontal, Paperclip, PenLine, Pin, PinOff, Plus, Presentation, RefreshCw, RotateCcw, Search, Send, Share2, Sparkles, Square, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 interface Message {
@@ -1794,14 +1795,14 @@ function LivePromptSuggestions({ suggestions, onSelect }: { suggestions: string[
 }
 
 function ChatLoadingState({ mode = "thinking" }: { mode?: Message["loadingMode"] }) {
-  const config = {
-    solving: { label: "Solving...", icon: Code2 },
-    searching: { label: "Agent searching...", icon: Puzzle },
-    working: { label: "Working...", icon: Sparkles },
-    thinking: { label: "Thinking...", icon: Loader2 },
-  }[mode]
-  const Icon = config.icon
-  return <div className="mb-3 inline-flex h-8 items-center gap-2 rounded-full border border-violet-300/15 bg-violet-400/[0.07] px-3 text-xs font-medium text-violet-100/85 shadow-[0_0_18px_rgba(139,92,246,.08)]" role="status"><Icon className={cn("h-3.5 w-3.5 text-violet-300", mode === "thinking" || mode === "searching" ? "animate-spin" : "animate-pulse")} /><span>{config.label}</span></div>
+  const config: Record<NonNullable<Message["loadingMode"]>, { label: string; orb: OrbState }> = {
+    solving: { label: "Solving...", orb: "solving" },
+    searching: { label: "Agent searching...", orb: "searching" },
+    working: { label: "Working...", orb: "working" },
+    thinking: { label: "Thinking...", orb: "breathing" },
+  }
+  const active = config[mode]
+  return <div className="mb-3 inline-flex h-9 items-center gap-2.5 rounded-full border border-violet-300/15 bg-violet-400/[0.07] px-3 text-xs font-medium text-violet-100/85 shadow-[0_0_18px_rgba(139,92,246,.08)]" role="status"><ThinkingOrb state={active.orb} size={20} theme="dark" aria-label={active.label} /><span>{active.label}</span></div>
 }
 
 function ChatBubble({
