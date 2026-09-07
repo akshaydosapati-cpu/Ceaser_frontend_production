@@ -154,15 +154,17 @@ async function request<T>(path: string, options: RequestOptions, accessToken: st
     recordStartupMetric("first_api_start", { path })
   }
   try {
+    const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData
+    const requestBody: BodyInit | undefined = options.body === undefined ? undefined : isFormData ? options.body as FormData : JSON.stringify(options.body)
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       signal: options.signal ?? AbortSignal.timeout(timeoutFor(path)),
       headers: {
-        "Content-Type": "application/json",
+        ...(!isFormData ? { "Content-Type": "application/json" } : {}),
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...options.headers,
       },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: requestBody,
     })
     if (typeof window !== "undefined" && !performance.getEntriesByName("ceaser:first_api_response").length) {
       const totalMs = Math.round(performance.now() - startedAt)
@@ -268,6 +270,16 @@ export function apiRequest<T>(path: string, options: RequestOptions = {}): Promi
   const pending = apiRequestInternal<T>(path, options).finally(() => inFlightRequests.delete(key))
   inFlightRequests.set(key, pending)
   return pending
+}
+
+export async function apiBlobRequest(path: string): Promise<Blob> {
+  let response = await request(path, { method: "GET" }, getAccessToken())
+  if (response.status === 401 && shouldRefresh(path)) {
+    const refreshedToken = await refreshAccessToken()
+    if (refreshedToken) response = await request(path, { method: "GET" }, refreshedToken)
+  }
+  if (!response.ok) throw new ApiError("Document could not be loaded.", response.status)
+  return response.blob()
 }
 
 export async function apiStreamRequest(

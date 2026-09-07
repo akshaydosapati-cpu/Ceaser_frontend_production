@@ -57,16 +57,14 @@
 
   function renderRecord(record) {
     var status = record.status;
-    var valid = status === "valid";
-    var title = valid ? "Certificate Verified" : status === "revoked" ? "Certificate Revoked" : "Certificate Expired";
+    var valid = status === "published";
+    var title = valid ? "Certificate Verified" : "Certificate Revoked";
     var copy = valid
       ? "This certificate was officially issued by CEASER and matches our records."
       : status === "revoked"
         ? "This certificate exists in CEASER records but is no longer valid."
-        : "This certificate exists in CEASER records but has expired.";
-    var actions = "";
-    if (valid && record.certificate_url) actions += '<a href="' + escapeHtml(record.certificate_url) + '" target="_blank" rel="noopener">View Certificate</a>';
-    if (valid && record.offer_letter_url) actions += '<a href="' + escapeHtml(record.offer_letter_url) + '" target="_blank" rel="noopener">View Offer Letter</a>';
+        : "This certificate exists in CEASER records but is no longer valid.";
+    var period = record.start_date && record.end_date ? formatDate(record.start_date) + " - " + formatDate(record.end_date) : "Not specified";
     panel.className = "status-panel " + (valid ? "success" : status);
     panel.innerHTML =
       '<div class="status-heading"><span class="status-icon" aria-hidden="true">' + (valid ? "&#10003;" : "!") + "</span><h2>" + title + "</h2></div>" +
@@ -74,8 +72,11 @@
       '<dl class="certificate-details">' +
       detail("Certificate ID", record.certificate_id) + detail("Intern Name", record.intern_name) +
       detail("Internship Role", record.role) + detail("Organization", record.organization) +
-      detail("Issue Date", formatDate(record.issue_date)) + detail("Status", valid ? "Valid / Officially Issued" : title.replace("Certificate ", "")) +
-      "</dl>" + (actions ? '<div class="document-actions">' + actions + "</div>" : "");
+      detail("Internship Period", period) + detail("Issue Date", formatDate(record.issue_date)) +
+      detail("Internship Certificate", record.has_certificate ? "Official document on record" : "Not on record") +
+      detail("Offer Letter", record.has_offer_letter ? "Official document on record" : "Not on record") +
+      detail("Status", valid ? "Valid / Officially Issued" : title.replace("Certificate ", "")) +
+      "</dl>";
     panel.hidden = false;
   }
 

@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react"
-import { Archive, ChevronDown, Edit3, FileInput, FileText, Folder, FolderKanban, LockKeyhole, MessageSquarePlus, MoreHorizontal, Pin, PinOff, Puzzle, Search, Settings, Sparkles, Trash2, X } from "lucide-react"
+import { Archive, ChevronDown, Edit3, FileInput, FileText, Folder, FolderKanban, LockKeyhole, MessageSquarePlus, MoreHorizontal, Pin, PinOff, Puzzle, Search, Settings, ShieldCheck, Sparkles, Trash2, X } from "lucide-react"
 import darkWordmark from "@/public/ceaser-wordmark-dark-transparent.png"
 import { useApp } from "@/lib/app-context"
 import { chatApi, type ConversationRecord } from "@/lib/api/chat"
@@ -10,6 +10,7 @@ import { projectsApi, type ProjectRecord } from "@/lib/api/projects"
 import { getUserDisplayName, getUserDisplayRole, readUserProfile } from "@/lib/user-profile"
 import { cn } from "@/lib/utils"
 import { recordStartupMetric } from "@/lib/api/client"
+import { adminApi } from "@/lib/api/admin"
 
 export function Sidebar() {
   const { currentPage, setCurrentPage, confirmDialog, promptDialog, guestDemo, sidebarCollapsed, setSidebarCollapsed } = useApp()
@@ -22,15 +23,17 @@ export function Sidebar() {
   const [chatActionError, setChatActionError] = useState("")
   const sidebarRef = useRef<HTMLElement>(null)
   const [profile, setProfile] = useState(readUserProfile())
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     if (guestDemo) {
       recordStartupMetric("secondary_data_ready", { projects: 0, conversations: 0, guest_demo: true })
       return
     }
-    void Promise.allSettled([projectsApi.list(), chatApi.listConversations(false)]).then(([projectResult, chatResult]) => {
+    void Promise.allSettled([projectsApi.list(), chatApi.listConversations(false), adminApi.me()]).then(([projectResult, chatResult, adminResult]) => {
       if (projectResult.status === "fulfilled") setProjects(projectResult.value)
       if (chatResult.status === "fulfilled") setChats(chatResult.value)
+      if (adminResult.status === "fulfilled") setIsAdmin(adminResult.value.is_admin)
       recordStartupMetric("secondary_data_ready", {
         projects: projectResult.status === "fulfilled" ? projectResult.value.length : 0,
         conversations: chatResult.status === "fulfilled" ? chatResult.value.length : 0,
@@ -123,7 +126,7 @@ export function Sidebar() {
     if (window.innerWidth < 768) setSidebarCollapsed(true)
   }
 
-  const openPage = (page: "files" | "projects" | "integrations" | "settings") => {
+  const openPage = (page: "files" | "projects" | "integrations" | "admin" | "settings") => {
     setCurrentPage(page)
     if (window.innerWidth < 768) setSidebarCollapsed(true)
   }
@@ -149,6 +152,7 @@ export function Sidebar() {
       <NavButton icon={FileText} label="Library" locked={guestDemo} active={currentPage === "files"} onClick={() => openPage("files")} />
       <NavButton icon={FolderKanban} label="Projects" locked={guestDemo} active={currentPage === "projects"} onClick={() => openPage("projects")} />
       <NavButton icon={Puzzle} label="Plugins" locked={guestDemo} active={currentPage === "integrations"} onClick={() => openPage("integrations")} />
+      {isAdmin && <NavButton icon={ShieldCheck} label="Admin" active={currentPage === "admin"} onClick={() => openPage("admin")} />}
       <NavButton icon={MoreHorizontal} label="More" locked={guestDemo} onClick={() => setShowMore((value) => !value)} />
       {showMore && !guestDemo && <div className="ml-3 border-l border-white/10 pl-2"><NavButton compact icon={Settings} label="Settings" onClick={() => openPage("settings")} /></div>}
     </div>
