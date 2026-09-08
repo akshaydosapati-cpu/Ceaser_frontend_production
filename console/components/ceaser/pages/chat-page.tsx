@@ -419,6 +419,21 @@ export function ChatPage() {
   const loadRequestRef = useRef(0)
   const streamAbortRef = useRef<AbortController | null>(null)
   const streamSessionRef = useRef(0)
+  const renderTimingRef = useRef<{ id: string; started: number; first: boolean; final: boolean } | null>(null)
+  useEffect(() => {
+    const timing = renderTimingRef.current
+    if (!timing) return
+    const message = messages.find((item) => item.id === timing.id)
+    if (!message?.content) return
+    if (!timing.first) {
+      timing.first = true
+      console.info("[CEASER LATENCY] first_content_committed_ms", Math.round(performance.now() - timing.started))
+    }
+    if (!message.isStreaming && !message.isTyping && !timing.final) {
+      timing.final = true
+      console.info("[CEASER LATENCY] final_content_committed_ms", Math.round(performance.now() - timing.started))
+    }
+  }, [messages])
   const autoSendSeedRef = useRef(false)
   const processedChatRequestRef = useRef<string | null>(null)
   const isProgrammaticScrollRef = useRef(false)
@@ -911,6 +926,7 @@ export function ChatPage() {
     trackEvent("chat_message_sent")
     cancelActiveStream()
     const documentRequest = detectDocumentRequest(content)
+    const streamSessionId = ++streamSessionRef.current
     // A newly sent message should be visible, but once the user scrolls up we
     // keep their reading position stable while streamed chunks arrive.
     shouldFollowStreamRef.current = true
@@ -962,12 +978,11 @@ export function ChatPage() {
       const fileIds = Array.from(new Set([...attachedFiles.map((file) => file.id), ...seededProjectFileIds]))
       const controller = new AbortController()
       streamAbortRef.current = controller
-      const streamSessionId = ++streamSessionRef.current
       const clientStreamStartedAt = performance.now()
+      renderTimingRef.current = { id: typingMessage.id, started: clientStreamStartedAt, first: false, final: false }
       let firstTokenAt: number | null = null
       let response: CeaserChatResponse | null = null
       let streamedContent = ""
-      let receivedStreamContent = false
       const imageGenerationRequested = isImageGenerationRequest(content)
       try {
         let streamError: string | null = null
@@ -986,7 +1001,6 @@ export function ChatPage() {
                 console.info("[CEASER LATENCY] first_content_token")
               }
               streamedContent += text
-              receivedStreamContent = true
               setMessages((current) =>
                 current.map((message) =>
                   message.id === typingMessage.id
@@ -997,6 +1011,7 @@ export function ChatPage() {
             },
             onComplete: (streamedResponse) => {
               if (streamSessionRef.current !== streamSessionId) return
+              streamError = null
               console.info(
                 `[CEASER LLM] provider=${String(streamedResponse.context_summary?.provider ?? "not reported")} model=${String(streamedResponse.context_summary?.model ?? "not reported")} fallback_used=${String(streamedResponse.context_summary?.fallback_used ?? false)} agents=${streamedResponse.selected_agents.join(",") || "none"}`,
               )
@@ -1012,44 +1027,18 @@ export function ChatPage() {
               streamError = message
             },
           }, { signal: controller.signal, forceLiveWebSearch: false })
+          if (streamSessionRef.current !== streamSessionId || controller.signal.aborted) return
           if (streamError) throw new Error(streamError)
         }
       } catch (error) {
+        if (streamSessionRef.current !== streamSessionId) return
         if (error instanceof DOMException && error.name === "AbortError") return
-        if (imageGenerationRequested) throw error
-        if (receivedStreamContent) {
-          response = {
-            scope: "personal_ai_os",
-            conversation_id: conversationId,
-            selected_agents: [],
-            contributions: [],
-            contribution_summary: "Response streamed.",
-            memories_used: [],
-            research: null,
-            workflow: null,
-            context_summary: {},
-            suggestions: [],
-            response: streamedContent,
-          }
-        } else {
-          throw error
-        }
+        if (!response) throw error
       }
 
+      if (streamSessionRef.current !== streamSessionId) return
       if (!response) {
-        response = {
-          scope: "personal_ai_os",
-          conversation_id: conversationId,
-          selected_agents: [],
-          contributions: [],
-          contribution_summary: "Response streamed.",
-          memories_used: [],
-          research: null,
-          workflow: null,
-          context_summary: {},
-          suggestions: [],
-          response: streamedContent || "CEASER could not complete that response. Please try again.",
-        }
+        throw new Error("The response was interrupted before completion. Please try again.")
       }
 
       const assistantMessage: Message = { ...responseToMessage(typingMessage.id, response), documentRequest: documentRequest ?? undefined }
@@ -1083,60 +1072,33 @@ export function ChatPage() {
           setMessages((current) => current.map((message) => message.id === typingMessage.id ? { ...message, artifact: { id: `failed-${typingMessage.id}`, fileId: "", title: documentRequest.label, format: documentRequest.kind, status: "failed", filename: "", preview: "", metadata: {} } } : message))
         })
       }
-      if (conversationId) {
-        const convoId = conversationId
-        void (async () => {
-          for (let attempt = 0; attempt < 10; attempt += 1) {
-            try {
-              const persistedMessages = await chatApi.listMessages(convoId, 12)
-              const persistedAssistant = [...persistedMessages].reverse().find((message) => message.role === "assistant")
-              if (!persistedAssistant) {
-                await new Promise((resolve) => window.setTimeout(resolve, 250))
-                continue
-              }
-              const hydratedAssistant = {
-                ...normalizeMessage(persistedAssistant),
-                id: typingMessage.id,
-                documentRequest: documentRequest ?? undefined,
-              }
-              setMessages((current) => {
-                const next = current.map((message) =>
-                  message.id === typingMessage.id
-                    ? { ...hydratedAssistant, isTyping: false, isStreaming: false }
-                    : message,
-                )
-                conversationCacheRef.current.set(convoId, next)
-                return next
-              })
-              break
-            } catch {
-              await new Promise((resolve) => window.setTimeout(resolve, 250))
-            }
-          }
-        })()
-      }
+      // The complete SSE payload is emitted after persistence and is authoritative.
       requestAnimationFrame(() => {
-        console.info("[CEASER LATENCY] frontend_render_ms", Math.round(performance.now() - clientStreamStartedAt), "first_token_ms", firstTokenAt === null ? null : Math.round(firstTokenAt - clientStreamStartedAt))
+        console.info("[CEASER LATENCY] stream_lifecycle_ms", Math.round(performance.now() - clientStreamStartedAt), "first_token_ms", firstTokenAt === null ? null : Math.round(firstTokenAt - clientStreamStartedAt))
       })
       setAttachedFiles([])
       void refreshConversationList()
       window.dispatchEvent(new Event("ceaser:activity-updated"))
     } catch (error) {
+      if (streamSessionRef.current !== streamSessionId) return
       if (error instanceof DOMException && error.name === "AbortError") return
       const assistantMessage: Message = {
         id: typingMessage.id,
         role: "assistant",
         content: error instanceof Error ? error.message : "CEASER chat failed to connect.",
         timestamp: formatTime(),
+        statusLabel: "Interrupted",
       }
       setMessages((current) => {
-        const next = current.map((message) => (message.id === typingMessage.id ? assistantMessage : message))
+        const next = current.map((message) => (message.id === typingMessage.id ? { ...assistantMessage, content: message.content || assistantMessage.content } : message))
         if (conversationId) conversationCacheRef.current.set(conversationId, next)
         return next
       })
     } finally {
-      streamAbortRef.current = null
-      setIsLoading(false)
+      if (streamSessionRef.current === streamSessionId) {
+        streamAbortRef.current = null
+        setIsLoading(false)
+      }
     }
   }
 
@@ -1822,7 +1784,7 @@ function ChatBubble({
   return (
     <div className={cn("flex w-full gap-4", isUser ? "justify-end" : "justify-start")}>
       <div className={cn(isUser ? "group/user relative max-w-[78%] pb-7 text-white md:max-w-[68%]" : "min-w-0 flex-1 text-white")}>
-        {!isUser && <div className="mb-3 flex items-center gap-2"><Image src={ceaserFavicon} alt="CEASER" className="h-7 w-7 rounded-full" /><span className="text-xs text-white/40">{message.timestamp}</span>{!message.isTyping && !message.isStreaming ? <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-500/[0.07] px-3 py-1.5 text-xs text-emerald-400"><Check className="h-3.5 w-3.5" />Completed</span> : null}</div>}
+        {!isUser && <div className="mb-3 flex items-center gap-2"><Image src={ceaserFavicon} alt="CEASER" className="h-7 w-7 rounded-full" /><span className="text-xs text-white/40">{message.timestamp}</span>{!message.isTyping && !message.isStreaming ? <span className={cn("ml-auto inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", message.statusLabel === "Interrupted" ? "bg-amber-500/[0.07] text-amber-400" : "bg-emerald-500/[0.07] text-emerald-400")}>{message.statusLabel === "Interrupted" ? <RefreshCw className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}{message.statusLabel || "Completed"}</span> : null}</div>}
         {!isUser && (message.isTyping || message.isStreaming) ? <ChatLoadingState mode={message.loadingMode} /> : null}
         {message.isTyping && !message.content ? null : <>
           <div className={cn(isUser ? "rounded-2xl border border-violet-500/45 bg-gradient-to-br from-violet-500/[0.16] to-purple-900/[0.16] px-5 py-4 shadow-[0_14px_45px_rgba(76,29,149,.12)]" : "rounded-2xl border border-white/[0.12] bg-[#080d1b]/76 p-5 shadow-[0_20px_60px_rgba(0,0,0,.2)]")}>

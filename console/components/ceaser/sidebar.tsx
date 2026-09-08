@@ -30,10 +30,12 @@ export function Sidebar() {
       recordStartupMetric("secondary_data_ready", { projects: 0, conversations: 0, guest_demo: true })
       return
     }
-    void Promise.allSettled([projectsApi.list(), chatApi.listConversations(false), adminApi.me()]).then(([projectResult, chatResult, adminResult]) => {
-      if (projectResult.status === "fulfilled") setProjects(projectResult.value)
-      if (chatResult.status === "fulfilled") setChats(chatResult.value)
-      if (adminResult.status === "fulfilled") setIsAdmin(adminResult.value.is_admin)
+    let disposed = false
+    void adminApi.me().then((admin) => { if (!disposed) setIsAdmin(admin.is_admin) }).catch(() => undefined)
+    void Promise.allSettled([
+      projectsApi.list().then((items) => { if (!disposed) setProjects(items); return items }),
+      chatApi.listConversations(false).then((items) => { if (!disposed) setChats(items); return items }),
+    ]).then(([projectResult, chatResult]) => {
       recordStartupMetric("secondary_data_ready", {
         projects: projectResult.status === "fulfilled" ? projectResult.value.length : 0,
         conversations: chatResult.status === "fulfilled" ? chatResult.value.length : 0,
@@ -41,7 +43,7 @@ export function Sidebar() {
     })
     const refresh = () => setProfile(readUserProfile())
     window.addEventListener("ceaser:profile-updated", refresh)
-    return () => window.removeEventListener("ceaser:profile-updated", refresh)
+    return () => { disposed = true; window.removeEventListener("ceaser:profile-updated", refresh) }
   }, [guestDemo])
 
   useEffect(() => {

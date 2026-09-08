@@ -297,6 +297,13 @@ export async function apiStreamRequest(
   } = {},
 ) {
   const accessToken = getAccessToken()
+  const streamStartedAt = performance.now()
+  const latency: Record<string, unknown> = { path }
+  const markStream = (stage: string) => {
+    latency[stage] = Math.round(performance.now() - streamStartedAt)
+    console.info("[CEASER STREAM]", { ...latency, stage })
+  }
+  markStream("request_created")
   const streamOptions: RequestOptions = {
     ...options,
     headers: {
@@ -305,7 +312,10 @@ export async function apiStreamRequest(
       ...options.headers,
     },
   }
+  markStream("request_dispatched")
   let response = await request(path, streamOptions, accessToken)
+  latency.request_id = response.headers.get("x-request-id")
+  markStream("request_headers_received")
 
   if (response.status === 401 && shouldRefresh(path)) {
     const refreshedToken = await refreshAccessToken()
@@ -331,9 +341,9 @@ export async function apiStreamRequest(
   let buffer = ""
 
   const dispatchEvent = (raw: string) => {
-    const lines = raw.split("\n")
+    const lines = raw.split(/\r?\n/)
     const eventName = lines.find((line) => line.startsWith("event:"))?.replace("event:", "").trim()
-    const dataLine = lines.find((line) => line.startsWith("data:"))?.replace(/^data:\s?/, "")
+    const dataLine = lines.filter((line) => line.startsWith("data:")).map((line) => line.replace(/^data:\s?/, "")).join("\n")
     if (!eventName || !dataLine) return
     let payload: Record<string, unknown> | string = dataLine
     try {
@@ -341,8 +351,12 @@ export async function apiStreamRequest(
     } catch {
       // Some stream events send raw text chunks.
     }
+    if (eventName === "response.started" && typeof payload !== "string") latency.request_id = payload.id
     if (eventName === "status" && typeof payload !== "string") handlers.onStatus?.(payload)
-    if (eventName === "token") handlers.onToken?.(typeof payload === "string" ? payload : String(payload.text ?? ""))
+    if (eventName === "token") {
+      if (latency.first_content_token_received === undefined) markStream("first_content_token_received")
+      handlers.onToken?.(typeof payload === "string" ? payload : String(payload.text ?? ""))
+    }
     if (eventName === "complete" && typeof payload !== "string") handlers.onComplete?.(payload)
     if (eventName === "activity" && typeof payload !== "string") handlers.onActivity?.(payload)
     if ((eventName === "block.created" || eventName === "block.updated") && typeof payload !== "string") handlers.onBlock?.(payload)
@@ -354,15 +368,24 @@ export async function apiStreamRequest(
     }
   }
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const events = buffer.split("\n\n")
-    buffer = events.pop() ?? ""
-    for (const raw of events) dispatchEvent(raw)
+  try {
+    while (true) {
+      options.signal?.throwIfAborted()
+      const { done, value } = await reader.read()
+      if (done) break
+      if (latency.first_stream_chunk_received === undefined) markStream("first_stream_chunk_received")
+      buffer += decoder.decode(value, { stream: true })
+      const events = buffer.split(/\r?\n\r?\n/)
+      buffer = events.pop() ?? ""
+      for (const raw of events) dispatchEvent(raw)
+    }
+    buffer += decoder.decode()
+    if (buffer.trim()) dispatchEvent(buffer)
+    markStream("stream_complete")
+  } finally {
+    await reader.cancel().catch(() => undefined)
+    reader.releaseLock()
   }
-  if (buffer.trim()) dispatchEvent(buffer)
 }
 
 function canCache(path: string) {
