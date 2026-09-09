@@ -167,9 +167,9 @@ async function request<T>(path: string, options: RequestOptions, accessToken: st
       body: requestBody,
     })
     if (typeof window !== "undefined" && (path === "/admin/me" || path === "/auth/me")) {
-      console.info("[CEASER AUTH TIMING]", { path, request_id: response.headers.get("x-request-id"),
+      console.info("[CEASER AUTH TIMING]", JSON.stringify({ path, request_id: response.headers.get("x-request-id"),
         browser_headers_ms: Math.round(performance.now() - startedAt), status: response.status,
-        server_timing: response.headers.get("server-timing") })
+        server_timing: response.headers.get("server-timing") }))
     }
     if (typeof window !== "undefined" && !performance.getEntriesByName("ceaser:first_api_response").length) {
       const totalMs = Math.round(performance.now() - startedAt)
@@ -306,7 +306,7 @@ export async function apiStreamRequest(
   const latency: Record<string, unknown> = { path, request_id: new Headers(options.headers).get("x-request-id") }
   const markStream = (stage: string) => {
     latency[stage] = Math.round(performance.now() - streamStartedAt)
-    console.info("[CEASER STREAM]", { ...latency, stage })
+    console.info("[CEASER STREAM]", JSON.stringify({ ...latency, stage }))
   }
   markStream("request_created")
   const streamOptions: RequestOptions = {
@@ -320,6 +320,7 @@ export async function apiStreamRequest(
   markStream("request_dispatched")
   let response = await request(path, streamOptions, accessToken)
   latency.request_id = response.headers.get("x-request-id")
+  latency.server_timing = response.headers.get("server-timing")
   markStream("request_headers_received")
 
   if (response.status === 401 && shouldRefresh(path)) {
@@ -358,7 +359,7 @@ export async function apiStreamRequest(
     }
     if (eventName === "response.started" && typeof payload !== "string") latency.request_id = payload.id
     if (eventName === "diagnostics" && typeof payload !== "string") {
-      console.info("[CEASER BACKEND TIMING]", { ...payload, browser_received_ms: Math.round(performance.now() - streamStartedAt) })
+      console.info("[CEASER BACKEND TIMING]", JSON.stringify({ ...payload, browser_received_ms: Math.round(performance.now() - streamStartedAt) }))
     }
     if (eventName === "status" && typeof payload !== "string") handlers.onStatus?.(payload)
     if (eventName === "token") {
