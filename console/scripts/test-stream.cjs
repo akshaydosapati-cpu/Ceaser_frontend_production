@@ -11,14 +11,15 @@ async function main() {
   let streamController
   const body = new ReadableStream({ start(controller) { streamController = controller } })
   const exports = {}
+  const logs = []
   vm.runInNewContext(output, {
     exports, process: { env: {} }, performance, Headers, TextDecoder, AbortController, AbortSignal, DOMException,
-    console: { info() {} }, setTimeout, clearTimeout,
+    console: { info(...args) { logs.push(args) } }, setTimeout, clearTimeout,
     fetch: async () => new Response(body, { headers: { 'Content-Type': 'text/event-stream' } }),
   })
   const tokens = []
   let complete = false
-  const pending = exports.apiStreamRequest('/ceaser/chat/stream', { method: 'POST', body: {} }, {
+  const pending = exports.apiStreamRequest('/ceaser/chat/stream', { method: 'POST', body: {}, headers: { 'X-Request-Id': 'test-request' } }, {
     onToken: text => tokens.push(text), onComplete: () => { complete = true },
   })
   const encoder = new TextEncoder()
@@ -27,12 +28,18 @@ async function main() {
   await new Promise(resolve => setImmediate(resolve))
   assert.deepEqual(tokens, ['hello'], 'first content must arrive before stream closure')
   assert.equal(complete, false)
+  streamController.enqueue(encoder.encode('event: diagnostics\ndata: {"request_id":"test-request","stage":"first_content_forwarded","endpoint_ttft_ms":123}\n\n'))
   streamController.enqueue(encoder.encode('event: token\ndata: " world"\n\nevent: complete\ndata: {"response":"hello world"}\n\n'))
   streamController.close()
   await pending
   assert.equal(tokens.join(''), 'hello world')
   assert.equal(complete, true)
   assert.equal(body.locked, false)
-  console.log('PASS: fragmented SSE, CRLF, incremental delivery, completion, reader cleanup')
+  const diagnostic = logs.find(entry => entry[0] === '[CEASER BACKEND TIMING]')
+  assert.equal(diagnostic[1].request_id, 'test-request')
+  assert.equal(diagnostic[1].endpoint_ttft_ms, 123)
+  assert.equal(typeof diagnostic[1].browser_received_ms, 'number')
+  assert.equal(logs[0][1].request_id, 'test-request')
+  console.log('PASS: fragmented SSE, CRLF, incremental delivery, completion, reader cleanup, correlated diagnostics')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

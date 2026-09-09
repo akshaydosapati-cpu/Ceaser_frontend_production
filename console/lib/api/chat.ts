@@ -220,13 +220,14 @@ export const chatApi = {
       onComplete?: (response: CeaserChatResponse) => void
       onError?: (message: string) => void
     },
-    options?: { signal?: AbortSignal } & ChatRequestOptions,
+    options?: { signal?: AbortSignal; requestId?: string } & ChatRequestOptions,
   ) =>
     apiStreamRequest(
       "/ceaser/chat/stream",
       {
         method: "POST",
         signal: options?.signal,
+        headers: options?.requestId ? { "X-Request-Id": options.requestId } : undefined,
         body: {
           message,
           conversation_id: conversationId,

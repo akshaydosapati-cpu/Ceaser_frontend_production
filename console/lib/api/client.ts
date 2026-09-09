@@ -166,6 +166,11 @@ async function request<T>(path: string, options: RequestOptions, accessToken: st
       },
       body: requestBody,
     })
+    if (typeof window !== "undefined" && (path === "/admin/me" || path === "/auth/me")) {
+      console.info("[CEASER AUTH TIMING]", { path, request_id: response.headers.get("x-request-id"),
+        browser_headers_ms: Math.round(performance.now() - startedAt), status: response.status,
+        server_timing: response.headers.get("server-timing") })
+    }
     if (typeof window !== "undefined" && !performance.getEntriesByName("ceaser:first_api_response").length) {
       const totalMs = Math.round(performance.now() - startedAt)
       const serverMs = Number(response.headers.get("x-process-time-ms") || 0)
@@ -298,7 +303,7 @@ export async function apiStreamRequest(
 ) {
   const accessToken = getAccessToken()
   const streamStartedAt = performance.now()
-  const latency: Record<string, unknown> = { path }
+  const latency: Record<string, unknown> = { path, request_id: new Headers(options.headers).get("x-request-id") }
   const markStream = (stage: string) => {
     latency[stage] = Math.round(performance.now() - streamStartedAt)
     console.info("[CEASER STREAM]", { ...latency, stage })
@@ -352,9 +357,12 @@ export async function apiStreamRequest(
       // Some stream events send raw text chunks.
     }
     if (eventName === "response.started" && typeof payload !== "string") latency.request_id = payload.id
+    if (eventName === "diagnostics" && typeof payload !== "string") {
+      console.info("[CEASER BACKEND TIMING]", { ...payload, browser_received_ms: Math.round(performance.now() - streamStartedAt) })
+    }
     if (eventName === "status" && typeof payload !== "string") handlers.onStatus?.(payload)
     if (eventName === "token") {
-      if (latency.first_content_token_received === undefined) markStream("first_content_token_received")
+      if ((typeof payload === "string" ? payload : String(payload.text ?? "")).length && latency.first_content_token_received === undefined) markStream("first_content_token_received")
       handlers.onToken?.(typeof payload === "string" ? payload : String(payload.text ?? ""))
     }
     if (eventName === "complete" && typeof payload !== "string") handlers.onComplete?.(payload)

@@ -419,7 +419,7 @@ export function ChatPage() {
   const loadRequestRef = useRef(0)
   const streamAbortRef = useRef<AbortController | null>(null)
   const streamSessionRef = useRef(0)
-  const renderTimingRef = useRef<{ id: string; started: number; first: boolean; final: boolean } | null>(null)
+  const renderTimingRef = useRef<{ id: string; requestId: string; started: number; first: boolean; final: boolean } | null>(null)
   useEffect(() => {
     const timing = renderTimingRef.current
     if (!timing) return
@@ -427,11 +427,11 @@ export function ChatPage() {
     if (!message?.content) return
     if (!timing.first) {
       timing.first = true
-      console.info("[CEASER LATENCY] first_content_committed_ms", Math.round(performance.now() - timing.started))
+      console.info("[CEASER LATENCY]", { request_id: timing.requestId, stage: "first_content_committed", elapsed_ms: Math.round(performance.now() - timing.started) })
     }
     if (!message.isStreaming && !message.isTyping && !timing.final) {
       timing.final = true
-      console.info("[CEASER LATENCY] final_content_committed_ms", Math.round(performance.now() - timing.started))
+      console.info("[CEASER LATENCY]", { request_id: timing.requestId, stage: "final_content_committed", elapsed_ms: Math.round(performance.now() - timing.started) })
     }
   }, [messages])
   const autoSendSeedRef = useRef(false)
@@ -927,6 +927,7 @@ export function ChatPage() {
     cancelActiveStream()
     const documentRequest = detectDocumentRequest(content)
     const streamSessionId = ++streamSessionRef.current
+    const requestId = crypto.randomUUID()
     // A newly sent message should be visible, but once the user scrolls up we
     // keep their reading position stable while streamed chunks arrive.
     shouldFollowStreamRef.current = true
@@ -979,7 +980,7 @@ export function ChatPage() {
       const controller = new AbortController()
       streamAbortRef.current = controller
       const clientStreamStartedAt = performance.now()
-      renderTimingRef.current = { id: typingMessage.id, started: clientStreamStartedAt, first: false, final: false }
+      renderTimingRef.current = { id: typingMessage.id, requestId, started: clientStreamStartedAt, first: false, final: false }
       let firstTokenAt: number | null = null
       let response: CeaserChatResponse | null = null
       let streamedContent = ""
@@ -1026,7 +1027,7 @@ export function ChatPage() {
               if (streamSessionRef.current !== streamSessionId) return
               streamError = message
             },
-          }, { signal: controller.signal, forceLiveWebSearch: false })
+          }, { signal: controller.signal, requestId, forceLiveWebSearch: false })
           if (streamSessionRef.current !== streamSessionId || controller.signal.aborted) return
           if (streamError) throw new Error(streamError)
         }
