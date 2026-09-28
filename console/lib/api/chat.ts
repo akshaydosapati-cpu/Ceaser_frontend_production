@@ -181,6 +181,10 @@ export const chatApi = {
       method: "DELETE",
     }).then((response) => {
       invalidateApiCache([`/conversations/${conversationId}`, "/conversations", `/chat/conversations/${conversationId}/messages`])
+      // Dispatch event to trigger sidebar refetch
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("ceaser:conversations-changed", { detail: { action: "deleted", conversationId } }))
+      }
       return response
     }),
   listMessages: (conversationId: string, limit = 60) =>
