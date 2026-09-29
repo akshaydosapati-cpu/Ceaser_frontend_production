@@ -16,6 +16,7 @@ import { getUserDisplayName, readUserProfile } from "@/lib/user-profile"
 import { cn } from "@/lib/utils"
 import { CeaserLogo } from "../ceaser-logo"
 import { RichResponseRenderer } from "../rich-response-renderer"
+import { WorkflowCard } from "../workflow-card"
 import { FOOTER_VOICE_EVENT } from "../command-bar"
 import { navigationItems } from "@/lib/ceaser"
 import type { VoiceRespondResponse } from "@/lib/api/voice"
@@ -1790,6 +1791,11 @@ function ChatBubble({
         {message.isTyping && !message.content ? null : <>
           <div className={cn(isUser ? "rounded-2xl border border-violet-500/45 bg-gradient-to-br from-violet-500/[0.16] to-purple-900/[0.16] px-5 py-4 shadow-[0_14px_45px_rgba(76,29,149,.12)]" : "rounded-2xl border border-white/[0.12] bg-[#080d1b]/76 p-5 shadow-[0_20px_60px_rgba(0,0,0,.2)]")}>
             {isUser && <div className="mb-2 flex items-center justify-between text-xs"><span className="font-semibold text-violet-300">You</span><span className="text-white/45">{message.timestamp}</span></div>}
+            {message.role === "assistant" && message.workflow && !message.isStreaming && (
+              <div className="mb-4">
+                <WorkflowCard workflow={message.workflow} isStreaming={message.isStreaming} />
+              </div>
+            )}
             {message.role === "assistant" && !message.isStreaming && message.richResponse && hasStructuredRichContent(message.richResponse)
               ? <RichResponseRenderer response={message.richResponse} onAction={onPromptSelect} />
               : message.role === "assistant" && message.isStreaming && message.content.trimStart().startsWith("{")
