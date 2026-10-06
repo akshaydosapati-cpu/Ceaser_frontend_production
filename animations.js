@@ -22,24 +22,12 @@
       document.querySelectorAll(".badge-soon").forEach(function (el) {
         el.innerHTML = '<span class="dot" aria-hidden="true"></span>Live Now';
       });
-      document.querySelectorAll(".nav-right").forEach(function (navRight) {
-        if (!navRight.querySelector("[data-live-console]")) {
-          var link = document.createElement("a");
-          link.href = "/console/";
-          link.className = "btn btn-primary btn-sm";
-          link.setAttribute("data-live-console", "true");
-          link.textContent = "Console";
-          navRight.appendChild(link);
-        }
-      });
       document.querySelectorAll(".nav-center, .mobile-menu .container").forEach(function (nav) {
         nav.innerHTML = [
           '<a href="#experience">Try CEASER</a>',
           '<a href="#features">Capabilities</a>',
           '<a href="#use-cases">Use Cases</a>',
           '<a href="#companion">Companion</a>',
-          '<a href="#students">Students</a>',
-          '<a href="#pricing" data-feature="pricing">Pricing</a>',
           '<a href="/about/">About</a>',
           '<a href="/founders/">Founders</a>'
         ].join("");
