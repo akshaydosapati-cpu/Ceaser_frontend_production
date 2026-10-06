@@ -39,7 +39,9 @@
           '<a href="#use-cases">Use Cases</a>',
           '<a href="#companion">Companion</a>',
           '<a href="#students">Students</a>',
-          '<a href="#pricing" data-feature="pricing">Pricing</a>'
+          '<a href="#pricing" data-feature="pricing">Pricing</a>',
+          '<a href="/about/">About</a>',
+          '<a href="/founders/">Founders</a>'
         ].join("");
       });
     } else if (post) {
