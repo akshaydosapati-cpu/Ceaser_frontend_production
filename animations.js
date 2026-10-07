@@ -159,11 +159,12 @@
       var frame = document.getElementById("nix-intro-frame");
       if (!stage || !frame) return;
 
-      // Ensure the stage is empty except for the moved frame.
-      stage.querySelectorAll("iframe").forEach(function (iframe) {
-        if (iframe !== frame) iframe.remove();
-      });
+      // Replace any previous logo content in the hero stage.
+      stage.innerHTML = "";
+      stage.setAttribute("aria-hidden", "false");
 
+      frame.setAttribute("aria-hidden", "false");
+      frame.classList.remove("nix-anim-root");
       frame.classList.add("nix-logo-iframe");
       stage.appendChild(frame);
     }
@@ -190,6 +191,8 @@
 
     // Start in intro mode
     overlay.setAttribute("aria-hidden", "false");
+    var introFrame = document.getElementById("nix-intro-frame");
+    if (introFrame) introFrame.setAttribute("aria-hidden", "false");
     document.documentElement.classList.add("nix-intro");
 
     // Auto-transition after logo play time
