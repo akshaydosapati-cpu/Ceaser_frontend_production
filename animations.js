@@ -24,7 +24,7 @@
       });
       document.querySelectorAll(".nav-center, .mobile-menu .container").forEach(function (nav) {
         nav.innerHTML = [
-          '<a href="#experience">Try CEASER</a>',
+          '<a href="#companion">Try NIX</a>',
           '<a href="#features">Capabilities</a>',
           '<a href="#use-cases">Use Cases</a>',
           '<a href="#companion">Companion</a>',
@@ -143,6 +143,68 @@
   document.querySelectorAll(".wf-card").forEach(function (el, i) {
     el.style.animationDelay = 0.15 + i * 0.18 + "s";
   });
+
+  /* -------- NIX hero intro overlay -------- */
+  (function applyNixIntro() {
+    var overlay = document.getElementById("nix-intro-overlay");
+    var btn = document.getElementById("try-nix-btn");
+    if (!overlay || !btn) return;
+
+    // Play-time (ms). Your animated logo is looped, so after this duration
+    // we let the hero section take over.
+    var PLAY_MS = 5000;
+
+    function relocateLogoIntoHero() {
+      var stage = document.getElementById("nix-logo-stage");
+      var frame = document.getElementById("nix-intro-frame");
+      if (!stage || !frame) return;
+
+      // Ensure the stage is empty except for the moved frame.
+      stage.querySelectorAll("iframe").forEach(function (iframe) {
+        if (iframe !== frame) iframe.remove();
+      });
+
+      frame.classList.add("nix-logo-iframe");
+      stage.appendChild(frame);
+    }
+
+    function showExperience() {
+      // Hide intro overlay
+      overlay.setAttribute("aria-hidden", "true");
+      // Reveal hero content smoothly
+      document.documentElement.classList.remove("nix-intro");
+    }
+
+    function activateNix() {
+      // Move the running intro animation into the hero section first.
+      // (This prevents a brief blank state while we remove the nix-intro hiding.)
+      relocateLogoIntoHero();
+
+      // Hide overlay + reveal hero content.
+      overlay.setAttribute("aria-hidden", "true");
+      document.documentElement.classList.remove("nix-intro");
+
+      // Mark for later desktop-companion wiring.
+      document.documentElement.setAttribute("data-nix-activated", "true");
+    }
+
+    // Start in intro mode
+    overlay.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("nix-intro");
+
+    // Auto-transition after logo play time
+    var t = window.setTimeout(function () {
+      // Remove intro hiding
+      document.documentElement.classList.remove("nix-intro");
+      activateNix();
+    }, PLAY_MS);
+
+    btn.addEventListener("click", function () {
+      // If user clicks early, skip to experience immediately.
+      window.clearTimeout(t);
+      activateNix();
+    });
+  })();
 
   /* -------- Countdown (used on gate page + launch section) -------- */
   function startCountdown(root) {

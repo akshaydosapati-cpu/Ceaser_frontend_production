@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+<div class="fixed inset-0 w-full h-full flex items-center justify-center bg-black">
+<!-- STITCH_SVG_START:ANIMATION_9 class="w-full h-full" --><div class="w-full h-full" id="animated-svg-ANIMATION_9" style="display:block;"><svg height="100%" viewbox="0 0 800 450" width="100%" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@600;700&display=swap');
+
+      * {
+        box-sizing: border-box;
+      }
+
+      .bg-fill {
+        fill: #000000;
+      }
+
+      /* Masked viewport styling for mechanical tumbler drum housings */
+      .slot-frame {
+        fill: #080808;
+        stroke: #222222;
+        stroke-width: 1.5;
+        rx: 16;
+      }
+
+      /* 3D Depth gradients & scanline shadow overlays */
+      .drum-shading {
+        pointer-events: none;
+      }
+
+      /* Monospace roll typography */
+      .letter-stroke {
+        fill: #ffffff;
+        font-family: 'Orbitron', 'Space Grotesk', -apple-system, sans-serif;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+        letter-spacing: 0.05em;
+      }
+
+      /* Dial tumbler tracks: vertical translation animation */
+      /* Total cycle: 7.5s. Roll and arrive around 2.0s - 2.3s (~28-30%).
+         Hold fixed on NIX for 5.0 seconds (from ~33% to ~97%).
+         Then quick snap back or restart at 100%. */
+      @keyframes rollDial1 {
+        0% { transform: translateY(0px); filter: blur(0px); }
+        4% { transform: translateY(-160px); filter: blur(2px); }
+        11% { transform: translateY(-720px); filter: blur(4px); }
+        19% { transform: translateY(-1440px); filter: blur(3px); }
+        25% { transform: translateY(-2000px); filter: blur(1.5px); }
+        28% { transform: translateY(-2160px); filter: blur(0px); }
+        /* Target 'N' is reached at step 18 (-2160px) */
+        29% { transform: translateY(-2172px); }
+        31% { transform: translateY(-2156px); }
+        33%, 97% { transform: translateY(-2160px); filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.75)); }
+        99%, 100% { transform: translateY(0px); filter: blur(0px); }
+      }
+
+      @keyframes rollDial2 {
+        0% { transform: translateY(0px); filter: blur(0px); }
+        3% { transform: translateY(-140px); filter: blur(1.5px); }
+        12% { transform: translateY(-840px); filter: blur(4px); }
+        20% { transform: translateY(-1600px); filter: blur(3.5px); }
+        26% { transform: translateY(-2240px); filter: blur(1.5px); }
+        29.5% { transform: translateY(-2400px); filter: blur(0px); }
+        /* Target 'I' is reached at step 20 (-2400px) */
+        30.5% { transform: translateY(-2414px); }
+        32% { transform: translateY(-2396px); }
+        33.5%, 97% { transform: translateY(-2400px); filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.75)); }
+        99%, 100% { transform: translateY(0px); filter: blur(0px); }
+      }
+
+      @keyframes rollDial3 {
+        0% { transform: translateY(0px); filter: blur(0px); }
+        5% { transform: translateY(-180px); filter: blur(2px); }
+        14% { transform: translateY(-1020px); filter: blur(4.5px); }
+        22% { transform: translateY(-1900px); filter: blur(3px); }
+        28% { transform: translateY(-2640px); filter: blur(1.5px); }
+        31% { transform: translateY(-2760px); filter: blur(0px); }
+        /* Target 'X' is reached at step 23 (-2760px) */
+        32% { transform: translateY(-2774px); }
+        33% { transform: translateY(-2756px); }
+        34%, 97% { transform: translateY(-2760px); filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.75)); }
+        99%, 100% { transform: translateY(0px); filter: blur(0px); }
+      }
+
+      .tumbler-col-1 {
+        animation: rollDial1 7.5s cubic-bezier(0.18, 0.89, 0.22, 1) infinite;
+      }
+
+      .tumbler-col-2 {
+        animation: rollDial2 7.5s cubic-bezier(0.18, 0.89, 0.22, 1) infinite;
+      }
+
+      .tumbler-col-3 {
+        animation: rollDial3 7.5s cubic-bezier(0.18, 0.89, 0.22, 1) infinite;
+      }
+
+      /* Sleek hud lock indicators */
+      @keyframes lockPulse {
+        0%, 27% { opacity: 0.15; stroke: #333333; }
+        34%, 96% { opacity: 1; stroke: #ffffff; filter: drop-shadow(0 0 6px rgba(255,255,255,0.8)); }
+        99%, 100% { opacity: 0.15; stroke: #333333; }
+      }
+
+      .lock-marker {
+        animation: lockPulse 7.5s ease-in-out infinite;
+      }
+
+      .bezel-screw {
+        fill: #1c1c1c;
+        stroke: #2e2e2e;
+        stroke-width: 0.8;
+      }
+    </style>
+<!-- Drum curvature vertical shadow mask for mechanical 3D roll effect -->
+<lineargradient id="drumShadow" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#000000" stop-opacity="0.95"></stop>
+<stop offset="18%" stop-color="#000000" stop-opacity="0.55"></stop>
+<stop offset="42%" stop-color="#000000" stop-opacity="0.0"></stop>
+<stop offset="58%" stop-color="#000000" stop-opacity="0.0"></stop>
+<stop offset="82%" stop-color="#000000" stop-opacity="0.55"></stop>
+<stop offset="100%" stop-color="#000000" stop-opacity="0.95"></stop>
+</lineargradient>
+<!-- Gloss highlight across drum center horizon -->
+<lineargradient id="centerHighlight" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#ffffff" stop-opacity="0.0"></stop>
+<stop offset="48%" stop-color="#ffffff" stop-opacity="0.06"></stop>
+<stop offset="50%" stop-color="#ffffff" stop-opacity="0.12"></stop>
+<stop offset="52%" stop-color="#ffffff" stop-opacity="0.06"></stop>
+<stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"></stop>
+</lineargradient>
+<!-- Clip Paths for each of the 3 tumbling letter windows (Height 130px) -->
+<clippath id="clipDial1">
+<rect height="130" rx="14" width="120" x="180" y="160"></rect>
+</clippath>
+<clippath id="clipDial2">
+<rect height="130" rx="14" width="120" x="340" y="160"></rect>
+</clippath>
+<clippath id="clipDial3">
+<rect height="130" rx="14" width="120" x="500" y="160"></rect>
+</clippath>
+</defs>
+<!-- Deep True Black Background -->
+<rect class="bg-fill" height="450" width="800"></rect>
+<!-- Subtle Minimal Geometric Backdrop Grid / Alignment Lines -->
+<g opacity="0.15" stroke="#444444" stroke-dasharray="2,8" stroke-width="0.75">
+<line x1="80" x2="720" y1="225" y2="225"></line>
+<line x1="240" x2="240" y1="80" y2="370"></line>
+<line x1="400" x2="400" y1="80" y2="370"></line>
+<line x1="560" x2="560" y1="80" y2="370"></line>
+</g>
+<!-- ==================== THREE DIAL PLACEHOLDER HOUSINGS ==================== -->
+<g>
+<!-- Slot 1 Housing (Target: N) -->
+<rect class="slot-frame" height="130" rx="14" width="120" x="180" y="160"></rect>
+<!-- Slot 2 Housing (Target: I) -->
+<rect class="slot-frame" height="130" rx="14" width="120" x="340" y="160"></rect>
+<!-- Slot 3 Housing (Target: X) -->
+<rect class="slot-frame" height="130" rx="14" width="120" x="500" y="160"></rect>
+<!-- Industrial Precision Corner Screws / Registration Pins -->
+<circle class="bezel-screw" cx="192" cy="172" r="2.5"></circle>
+<circle class="bezel-screw" cx="288" cy="172" r="2.5"></circle>
+<circle class="bezel-screw" cx="192" cy="278" r="2.5"></circle>
+<circle class="bezel-screw" cx="288" cy="278" r="2.5"></circle>
+<circle class="bezel-screw" cx="352" cy="172" r="2.5"></circle>
+<circle class="bezel-screw" cx="448" cy="172" r="2.5"></circle>
+<circle class="bezel-screw" cx="352" cy="278" r="2.5"></circle>
+<circle class="bezel-screw" cx="448" cy="278" r="2.5"></circle>
+<circle class="bezel-screw" cx="512" cy="172" r="2.5"></circle>
+<circle class="bezel-screw" cx="608" cy="172" r="2.5"></circle>
+<circle class="bezel-screw" cx="512" cy="278" r="2.5"></circle>
+<circle class="bezel-screw" cx="608" cy="278" r="2.5"></circle>
+</g>
+<!-- ==================== DIAL 1: ROLLING ALPHABETS TO 'N' ==================== -->
+<g clip-path="url(#clipDial1)">
+<g class="tumbler-col-1" transform="translate(0, 0)">
+<text class="letter-stroke" font-size="64" x="240" y="225">A</text>
+<text class="letter-stroke" font-size="64" x="240" y="345">B</text>
+<text class="letter-stroke" font-size="64" x="240" y="465">C</text>
+<text class="letter-stroke" font-size="64" x="240" y="585">D</text>
+<text class="letter-stroke" font-size="64" x="240" y="705">E</text>
+<text class="letter-stroke" font-size="64" x="240" y="825">F</text>
+<text class="letter-stroke" font-size="64" x="240" y="945">G</text>
+<text class="letter-stroke" font-size="64" x="240" y="1065">H</text>
+<text class="letter-stroke" font-size="64" x="240" y="1185">I</text>
+<text class="letter-stroke" font-size="64" x="240" y="1305">J</text>
+<text class="letter-stroke" font-size="64" x="240" y="1425">K</text>
+<text class="letter-stroke" font-size="64" x="240" y="1545">L</text>
+<text class="letter-stroke" font-size="64" x="240" y="1665">M</text>
+<text class="letter-stroke" font-size="64" x="240" y="1785">R</text>
+<text class="letter-stroke" font-size="64" x="240" y="1905">O</text>
+<text class="letter-stroke" font-size="64" x="240" y="2025">B</text>
+<text class="letter-stroke" font-size="64" x="240" y="2145">T</text>
+<text class="letter-stroke" font-size="64" x="240" y="2265">C</text>
+<!-- Step 18: TARGET GLYPH: N (Clean bold geometric arch style) -->
+<g transform="translate(240, 2385)">
+<path d="M -24 28 L -24 -28 M -24 -28 C -12 -30 12 -30 24 -14 L 24 28 M 24 -28 L 24 28" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"></path>
+<circle cx="24" cy="-28" fill="#FFFFFF" r="4"></circle>
+</g>
+<text class="letter-stroke" font-size="64" x="240" y="2505">O</text>
+<text class="letter-stroke" font-size="64" x="240" y="2625">P</text>
+</g>
+<!-- Drum 3D Cylindrical Shading -->
+<rect class="drum-shading" fill="url(#drumShadow)" height="130" width="120" x="180" y="160"></rect>
+<rect class="drum-shading" fill="url(#centerHighlight)" height="130" width="120" x="180" y="160"></rect>
+</g>
+<!-- ==================== DIAL 2: ROLLING ALPHABETS TO 'I' ==================== -->
+<g clip-path="url(#clipDial2)">
+<g class="tumbler-col-2" transform="translate(0, 0)">
+<text class="letter-stroke" font-size="64" x="400" y="225">Z</text>
+<text class="letter-stroke" font-size="64" x="400" y="345">Y</text>
+<text class="letter-stroke" font-size="64" x="400" y="465">X</text>
+<text class="letter-stroke" font-size="64" x="400" y="585">W</text>
+<text class="letter-stroke" font-size="64" x="400" y="705">V</text>
+<text class="letter-stroke" font-size="64" x="400" y="825">U</text>
+<text class="letter-stroke" font-size="64" x="400" y="945">T</text>
+<text class="letter-stroke" font-size="64" x="400" y="1065">S</text>
+<text class="letter-stroke" font-size="64" x="400" y="1185">R</text>
+<text class="letter-stroke" font-size="64" x="400" y="1305">Q</text>
+<text class="letter-stroke" font-size="64" x="400" y="1425">P</text>
+<text class="letter-stroke" font-size="64" x="400" y="1545">O</text>
+<text class="letter-stroke" font-size="64" x="400" y="1665">N</text>
+<text class="letter-stroke" font-size="64" x="400" y="1785">M</text>
+<text class="letter-stroke" font-size="64" x="400" y="1905">L</text>
+<text class="letter-stroke" font-size="64" x="400" y="2025">K</text>
+<text class="letter-stroke" font-size="64" x="400" y="2145">J</text>
+<text class="letter-stroke" font-size="64" x="400" y="2265">H</text>
+<text class="letter-stroke" font-size="64" x="400" y="2385">E</text>
+<text class="letter-stroke" font-size="64" x="400" y="2505">C</text>
+<!-- Step 20: TARGET GLYPH: I (Unambiguous Roman/Cybernetic 'I' with top & bottom crossbars) -->
+<g transform="translate(400, 2625)">
+<line stroke="#FFFFFF" stroke-linecap="round" stroke-width="8" x1="-20" x2="20" y1="-28" y2="-28"></line>
+<line stroke="#FFFFFF" stroke-linecap="round" stroke-width="8" x1="0" x2="0" y1="-28" y2="28"></line>
+<line stroke="#FFFFFF" stroke-linecap="round" stroke-width="8" x1="-20" x2="20" y1="28" y2="28"></line>
+</g>
+<text class="letter-stroke" font-size="64" x="400" y="2745">A</text>
+<text class="letter-stroke" font-size="64" x="400" y="2865">B</text>
+</g>
+<!-- Drum 3D Cylindrical Shading -->
+<rect class="drum-shading" fill="url(#drumShadow)" height="130" width="120" x="340" y="160"></rect>
+<rect class="drum-shading" fill="url(#centerHighlight)" height="130" width="120" x="340" y="160"></rect>
+</g>
+<!-- ==================== DIAL 3: ROLLING ALPHABETS TO 'X' ==================== -->
+<g clip-path="url(#clipDial3)">
+<g class="tumbler-col-3" transform="translate(0, 0)">
+<text class="letter-stroke" font-size="64" x="560" y="225">M</text>
+<text class="letter-stroke" font-size="64" x="560" y="345">N</text>
+<text class="letter-stroke" font-size="64" x="560" y="465">B</text>
+<text class="letter-stroke" font-size="64" x="560" y="585">V</text>
+<text class="letter-stroke" font-size="64" x="560" y="705">C</text>
+<text class="letter-stroke" font-size="64" x="560" y="825">D</text>
+<text class="letter-stroke" font-size="64" x="560" y="945">F</text>
+<text class="letter-stroke" font-size="64" x="560" y="1065">G</text>
+<text class="letter-stroke" font-size="64" x="560" y="1185">H</text>
+<text class="letter-stroke" font-size="64" x="560" y="1305">J</text>
+<text class="letter-stroke" font-size="64" x="560" y="1425">K</text>
+<text class="letter-stroke" font-size="64" x="560" y="1545">L</text>
+<text class="letter-stroke" font-size="64" x="560" y="1665">P</text>
+<text class="letter-stroke" font-size="64" x="560" y="1785">O</text>
+<text class="letter-stroke" font-size="64" x="560" y="1905">I</text>
+<text class="letter-stroke" font-size="64" x="560" y="2025">U</text>
+<text class="letter-stroke" font-size="64" x="560" y="2145">Y</text>
+<text class="letter-stroke" font-size="64" x="560" y="2265">T</text>
+<text class="letter-stroke" font-size="64" opacity="0" x="240" y="2385"></text>
+<text class="letter-stroke" font-size="64" x="560" y="2385">R</text>
+<text class="letter-stroke" font-size="64" x="560" y="2505">E</text>
+<text class="letter-stroke" font-size="64" x="560" y="2625">W</text>
+<text class="letter-stroke" font-size="64" x="560" y="2745">Q</text>
+<text class="letter-stroke" font-size="64" x="560" y="2865">Z</text>
+<!-- Step 23: TARGET GLYPH: X (Ultra-clean diagonal cross) -->
+<g transform="translate(560, 2985)">
+<line stroke="#FFFFFF" stroke-linecap="round" stroke-width="8" x1="-24" x2="24" y1="-28" y2="28"></line>
+<line stroke="#FFFFFF" stroke-linecap="round" stroke-width="8" x1="24" x2="-24" y1="-28" y2="28"></line>
+</g>
+<text class="letter-stroke" font-size="64" x="560" y="3105">Y</text>
+<text class="letter-stroke" font-size="64" x="560" y="3225">Z</text>
+</g>
+<!-- Drum 3D Cylindrical Shading -->
+<rect class="drum-shading" fill="url(#drumShadow)" height="130" width="120" x="500" y="160"></rect>
+<rect class="drum-shading" fill="url(#centerHighlight)" height="130" width="120" x="500" y="160"></rect>
+</g>
+<!-- ==================== LOCK RETICLES & HORIZONTAL INDEX MARKERS ==================== -->
+<g class="lock-marker">
+<path d="M 166 225 L 174 220 L 174 230 Z" fill="#FFFFFF"></path>
+<path d="M 634 225 L 626 220 L 626 230 Z" fill="#FFFFFF"></path>
+<path d="M 180 185 L 180 160 L 205 160" fill="none" stroke-width="2"></path>
+<path d="M 620 185 L 620 160 L 595 160" fill="none" stroke-width="2"></path>
+<path d="M 180 265 L 180 290 L 205 290" fill="none" stroke-width="2"></path>
+<path d="M 620 265 L 620 290 L 595 290" fill="none" stroke-width="2"></path>
+</g>
+<line stroke="#333333" stroke-dasharray="2 3" stroke-width="1.5" x1="305" x2="335" y1="225" y2="225"></line>
+<line stroke="#333333" stroke-dasharray="2 3" stroke-width="1.5" x1="465" x2="495" y1="225" y2="225"></line>
+</svg></div><!-- STITCH_SVG_END:ANIMATION_9 -->
+</div>
+</body>
+</html>

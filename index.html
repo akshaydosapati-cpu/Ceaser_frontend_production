@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="nix-intro">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -113,6 +113,19 @@
 
 <a href="#main" class="sr-only" style="position:absolute;left:-9999px;top:0;">Skip to content</a>
 
+<!-- ================= NIX INTRO ================= -->
+<div id="nix-intro-overlay" class="nix-intro-overlay" aria-hidden="false">
+  <div class="nix-intro-frame">
+    <iframe
+      id="nix-intro-frame"
+      src="./code.html"
+      title="CEASER NIX animated logo intro"
+      frameborder="0"
+      scrolling="no"
+    ></iframe>
+  </div>
+</div>
+
 <!-- ================= NAV ================= -->
 <header class="nav">
   <div class="container nav-inner">
@@ -132,6 +145,7 @@
 
     <div class="nav-right">
       <span class="badge-soon"><span class="dot" aria-hidden="true"></span>CEASER is live</span>
+      <a href="/console/" class="btn btn-primary btn-sm" aria-label="Open CEASER console">Open Console</a>
       <button class="nav-toggle btn-ghost btn-sm" style="border-radius:8px;" aria-label="Toggle menu" aria-expanded="false">☰</button>
     </div>
   </div>
@@ -150,35 +164,34 @@
 <main id="live-main" data-postlaunch-only>
   <section class="hero live-hero" id="product">
     <div class="container live-hero-grid">
-      <div class="hero-copy">
+      <div class="hero-copy nix-hero-content" style="position:relative; z-index:3;">
         <span class="eyebrow reveal-load">AI Operating System</span>
         <h1 class="reveal-load" style="animation-delay:.12s">Your Voice is the Only Command CEASER Needs.</h1>
         <p class="sub reveal-load" style="animation-delay:.22s">
           The AI Operating System that understands, plans, and executes work across your desktop.
         </p>
-        <div class="hero-ctas reveal-load" style="animation-delay:.32s">
-          <a href="#experience" class="btn btn-primary">Experience CEASER</a>
-          <a href="/downloads/" class="btn btn-ghost js-download-modal"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>Download Desktop Companion</a>
-        </div>
       </div>
-      <div class="live-orb-stage reveal-load" style="animation-delay:.36s" aria-label="Animated CEASER intelligence orb">
-        <div class="live-orb">
-          <span></span><i></i><b></b>
+      <div class="live-orb-stage reveal-load" style="animation-delay:.36s" aria-label="CEASER NIX animated logo">
+        <div class="nix-hero-stack">
+          <div id="nix-logo-stage" class="nix-logo-stage" aria-hidden="true">
+            <!-- The intro iframe moves here after the first animation play. -->
+          </div>
+          <div id="nix-cta" class="nix-try-cta">
+            <button class="btn btn-primary" id="try-nix-btn" type="button">Try NIX</button>
+          </div>
         </div>
-        <div class="orb-caption">Listening for intent</div>
       </div>
     </div>
   </section>
 
-  <section class="section" id="experience">
-    <div class="container guest-stage">
+  <section class="section" id="experience" style="display:none;" data-nix-disabled="true">
       <div class="section-head reveal">
         <span class="eyebrow">Try CEASER</span>
         <!-- Legacy guest mock removed from rendering.
         <h2>One place to explore what CEASER can do.</h2>
         <p>Open the real CEASER chat workspace in guest mode. The chat is live, but private modules stay locked until you sign in.</p>
       </div>
-      <div class="guest-lab reveal" data-guest-workspace data-is-guest="true">
+      <div class="guest-lab reveal" data-guest-workspace-disabled data-is-guest="true">
         <div class="guest-shell">
           <aside class="guest-sidebar" aria-label="Guest workspace navigation">
             <div class="guest-sidebar-brand">
